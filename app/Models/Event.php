@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Event extends Model
 {
-    protected $fillable = ['guild_id', 'region', 'start_at', 'total_slots', 'is_free_registration', 'status', 'discord_message_id'];
+    protected $fillable = ['name', 'description', 'guild_id', 'region', 'start_at', 'total_slots', 'is_free_registration', 'status', 'discord_message_id'];
 
     protected $casts = [
         'start_at' => 'datetime',
