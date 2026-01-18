@@ -10,6 +10,7 @@ use App\Actions\Events\Core\ApplyPresetToSquadAction;
 use App\Http\Resources\Api\Discord\EventFullResource;
 use App\Traits\ApiResponser;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class EventSquadController extends Controller
 {
@@ -49,5 +50,20 @@ class EventSquadController extends Controller
         $event->save();
 
         return $this->successResponse(null, 'Squad created successfully');
+    }
+
+    public function destroy($eventId, $squadId)
+    {
+        return DB::transaction(function () use ($eventId, $squadId) {
+            $event = Event::query()->findOrFail($eventId);
+            $squad = $event->squads()->findOrFail($squadId);
+
+            $squad->delete();
+
+            $event->total_slots = $event->squads()->sum('slots_limit');
+            $event->save();
+
+            return $this->successResponse(null, 'Squad deleted successfully');
+        });
     }
 }

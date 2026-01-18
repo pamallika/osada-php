@@ -28,6 +28,7 @@ Route::prefix('discord')->group(function () {
         Route::post('{id}/participants', [EventParticipantController::class, 'store']);
         Route::post('{id}/squads', [EventSquadController::class, 'store']);
         Route::post('{id}/apply-preset', [EventController::class, 'applyPreset']);
+        Route::delete('{id}/squads/{squadId}', [EventSquadController::class, 'destroy']);
     });
 
     Route::prefix('squads')->group(function () {
