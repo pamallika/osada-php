@@ -10,8 +10,8 @@ class SquadResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
-            'slots_limit' => $this->slots_limit,
+            'name' => $this->title,
+            'limit' => $this->slots_limit,
             'current_count' => $this->participants->count(),
             'participants' => ParticipantResource::collection($this->participants),
         ];

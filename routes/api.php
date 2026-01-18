@@ -26,10 +26,12 @@ Route::prefix('discord')->group(function () {
         Route::post('{id}/cancel', [EventController::class, 'cancel']);
         Route::patch('{id}/message', [EventController::class, 'updateMessageId']);
         Route::post('{id}/participants', [EventParticipantController::class, 'store']);
+        Route::post('{id}/squads', [EventSquadController::class, 'store']);
+        Route::post('{id}/apply-preset', [EventController::class, 'applyPreset']);
     });
 
     Route::prefix('squads')->group(function () {
-        Route::post('{squad_id}/presets', [EventSquadController::class, 'store']);
+        Route::post('{squad_id}/presets', [EventSquadController::class, 'applyPreset']);
     });
 
     Route::post('users/sync', [UserController::class, 'sync']);

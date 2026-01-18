@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Event;
 use App\Models\EventSquad;
 use App\Models\Preset;
 use App\Actions\Events\Core\ApplyPresetToSquadAction;
@@ -14,7 +15,7 @@ class EventSquadController extends Controller
 {
     use ApiResponser;
 
-    public function store(Request $request, $squadId, ApplyPresetToSquadAction $action)
+    public function applyPreset(Request $request, $squadId, ApplyPresetToSquadAction $action)
     {
         $request->validate(['preset_id' => 'required|exists:presets,id']);
 
@@ -27,5 +28,26 @@ class EventSquadController extends Controller
             new EventFullResource($squad->event->load(['squads.participants.user.profile', 'participants.user.profile'])),
             "Added {$addedCount} users from preset"
         );
+    }
+
+    public function store(Request $request, $eventId)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'limit' => 'required|integer|min:1',
+        ]);
+
+        $event = Event::query()->findOrFail($eventId);
+
+        $event->squads()->create([
+            'title' => $request->name,
+            'slots_limit' => $request->limit,
+            'position' => $event->squads()->count(),
+        ]);
+
+        $event->total_slots = $event->squads()->sum('slots_limit');
+        $event->save();
+
+        return $this->successResponse(null, 'Squad created successfully');
     }
 }
