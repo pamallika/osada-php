@@ -10,16 +10,16 @@ return new class extends Migration
     {
         Schema::create('guilds', function (Blueprint $table) {
             $table->id();
-            $table->string('discord_id')->unique();
             $table->string('name');
-
-            // Настройки каналов
-            $table->string('public_channel_id')->nullable();
-
-            // Роли офицеров храним в JSON массиве
-            $table->json('officer_role_ids')->nullable();
-
+            $table->string('slug')->unique(); // custom url
+            $table->foreignId('owner_id')->constrained('users');
+            $table->string('logo_url')->nullable();
             $table->timestamps();
         });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('guilds');
     }
 };

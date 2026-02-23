@@ -2,27 +2,21 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
-class User extends Model
+class User extends Authenticatable
 {
-    protected $fillable = ['discord_id', 'username', 'global_name', 'avatar'];
+    protected $fillable = ['name', 'email', 'password'];
 
-    public function profile(): HasOne
+    public function linkedAccounts(): HasMany
     {
-        return $this->hasOne(UserProfile::class);
+        return $this->hasMany(LinkedAccount::class);
     }
 
-    public function presets(): BelongsToMany
+    // В каких гильдиях состоит юзер
+    public function guildMemberships(): HasMany
     {
-        return $this->belongsToMany(Preset::class)->withPivot('default_squad_name');
-    }
-
-    public function participations(): HasMany
-    {
-        return $this->hasMany(EventParticipant::class);
+        return $this->hasMany(GuildMember::class);
     }
 }

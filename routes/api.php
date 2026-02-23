@@ -4,9 +4,25 @@ use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\EventParticipantController;
 use App\Http\Controllers\Api\EventSquadController;
 use App\Http\Controllers\Api\GuildController;
+use App\Http\Controllers\Api\V1\GuildController as V1GuildController;
 use App\Http\Controllers\Api\GuildPresetController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\GuildInviteController;
 use Illuminate\Support\Facades\Route;
+
+Route::prefix('v1/auth')->group(function () {
+    Route::post('/login/{provider}', [AuthController::class, 'login']);
+
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::post('/guilds', [V1GuildController::class, 'store']);
+        Route::post('/guilds/{guild}/invites', [GuildInviteController::class, 'store']);
+        Route::get('/invites/{token}', [GuildInviteController::class, 'show']);
+        Route::post('/invites/{token}/accept', [GuildInviteController::class, 'accept']);
+    });
+});
 
 Route::prefix('discord')->group(function () {
 

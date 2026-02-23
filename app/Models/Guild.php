@@ -2,30 +2,32 @@
 
 namespace App\Models;
 
+use GuildIntegration;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Guild extends Model
 {
-    protected $fillable = [
-        'discord_id',
-        'name',
-        'admin_channel_id',
-        'public_channel_id',
-        'officer_role_ids'
-    ];
+    protected $fillable = ['name', 'slug', 'owner_id', 'logo_url'];
 
-    protected $casts = [
-        'officer_role_ids' => 'array',
-    ];
-
-    public function events(): HasMany
+    public function owner(): BelongsTo
     {
-        return $this->hasMany(Event::class);
+        return $this->belongsTo(User::class, 'owner_id');
     }
 
-    public function presets(): HasMany
+    public function integrations(): HasMany
     {
-        return $this->hasMany(Preset::class);
+        return $this->hasMany(GuildIntegration::class);
+    }
+
+    public function members(): HasMany
+    {
+        return $this->hasMany(GuildMember::class);
+    }
+
+    public function invites(): HasMany
+    {
+        return $this->hasMany(GuildInvite::class);
     }
 }
