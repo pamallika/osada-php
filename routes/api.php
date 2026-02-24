@@ -11,12 +11,19 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\GuildInviteController;
 use Illuminate\Support\Facades\Route;
 
-Route::prefix('v1/auth')->group(function () {
-    Route::post('/login/{provider}', [AuthController::class, 'login']);
+Route::prefix('v1')->group(function () {
+    Route::prefix('auth')->group(function () {
+        Route::post('/login/{provider}', [AuthController::class, 'login']);
+        Route::get('/redirect/discord', [AuthController::class, 'redirect']);
+        Route::get('/callback/discord', [AuthController::class, 'callback']);
+
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/me', [AuthController::class, 'me']);
+            Route::post('/logout', [AuthController::class, 'logout']);
+        });
+    });
 
     Route::middleware('auth:sanctum')->group(function () {
-        Route::get('/me', [AuthController::class, 'me']);
-        Route::post('/logout', [AuthController::class, 'logout']);
         Route::post('/guilds', [V1GuildController::class, 'store']);
         Route::post('/guilds/{guild}/invites', [GuildInviteController::class, 'store']);
         Route::get('/invites/{token}', [GuildInviteController::class, 'show']);

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Actions\Auth\LoginViaProviderAction;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Laravel\Socialite\Facades\Socialite;
 
 class AuthController extends Controller
 {
@@ -48,5 +49,31 @@ class AuthController extends Controller
         $request->user()->currentAccessToken()->delete();
 
         return response()->json(['message' => 'Logged out successfully']);
+    }
+
+    public function redirect()
+    {
+        return Socialite::driver('discord')->stateless()->redirect();
+    }
+
+    public function callback(LoginViaProviderAction $loginAction)
+    {
+        try {
+            $discordUser = Socialite::driver(SocialProvider::DISCORD->value)->stateless()->user();
+
+            $providerData = [
+                'id' => $discordUser->getId(),
+                'username' => $discordUser->getName() ?? $discordUser->getNickname(),
+                'avatar' => $discordUser->getAvatar(),
+            ];
+
+            $token = $loginAction->execute(SocialProvider::DISCORD->value, $providerData);
+
+            return redirect(config('app.frontend_url') . '/auth/callback?token=' . $token);
+
+        } catch (\Exception $e) {
+            dd($e->getMessage());
+            return redirect(config('app.frontend_url') . '/login?error=auth_failed');
+        }
     }
 }
