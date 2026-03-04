@@ -25,6 +25,7 @@ class AuthController extends Controller
         $providerData = $request->validate([
             'id' => 'required|string',
             'username' => 'nullable|string',
+            'display_name' => 'nullable|string',
             'avatar' => 'nullable|string',
         ]);
 
@@ -39,9 +40,54 @@ class AuthController extends Controller
 
     public function me(Request $request): JsonResponse
     {
-        $user = $request->user()->load('linkedAccounts', 'guildMemberships.guild');
+        $user = $request->user();
+
+        if (!$user->profile) {
+            $user->profile()->create([
+                'family_name' => '',
+                'char_class' => 'None',
+                'gear_score' => 0,
+                'attack' => 0,
+                'awakening_attack' => 0,
+                'defense' => 0,
+                'level' => 1,
+            ]);
+        }
+
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return response()->json(['data' => $user]);
+    }
+
+    public function updateProfile(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'family_name' => 'required|string|max:255',
+            'char_class' => 'required|string|max:255',
+            'level' => 'required|integer|min:1|max:100',
+            'attack' => 'required|integer|min:0|max:1000',
+            'awk_attack' => 'required|integer|min:0|max:1000',
+            'defense' => 'required|integer|min:0|max:1000',
+        ]);
+
+        $user = $request->user();
+
+        $gearScore = max($validated['attack'], $validated['awk_attack']) + $validated['defense'];
+
+        $user->profile()->updateOrCreate(
+            ['user_id' => $user->id],
+            [
+                'family_name' => $validated['family_name'],
+                'char_class' => $validated['char_class'],
+                'level' => $validated['level'],
+                'attack' => $validated['attack'],
+                'awakening_attack' => $validated['awk_attack'],
+                'defense' => $validated['defense'],
+                'gear_score' => $gearScore,
+            ]
+        );
+
+        return $this->me($request);
     }
 
     public function logout(Request $request): JsonResponse
@@ -63,7 +109,8 @@ class AuthController extends Controller
 
             $providerData = [
                 'id' => $discordUser->getId(),
-                'username' => $discordUser->getName() ?? $discordUser->getNickname(),
+                'username' => $discordUser->getNickname(), // In discord driver: nickname is the username
+                'display_name' => $discordUser->user['global_name'] ?? $discordUser->getName(),
                 'avatar' => $discordUser->getAvatar(),
             ];
 
@@ -72,7 +119,6 @@ class AuthController extends Controller
             return redirect(config('app.frontend_url') . '/auth/callback?token=' . $token);
 
         } catch (\Exception $e) {
-            dd($e->getMessage());
             return redirect(config('app.frontend_url') . '/login?error=auth_failed');
         }
     }

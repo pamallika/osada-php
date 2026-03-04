@@ -1,5 +1,6 @@
 <?php
 
+use App\Actions\GetSystemStatusAction;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\Api\EventParticipantController;
 use App\Http\Controllers\Api\EventSquadController;
@@ -12,6 +13,8 @@ use App\Http\Controllers\Api\V1\GuildInviteController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
+    Route::get('/status', GetSystemStatusAction::class);
+
     Route::prefix('auth')->group(function () {
         Route::post('/login/{provider}', [AuthController::class, 'login']);
         Route::get('/redirect/discord', [AuthController::class, 'redirect']);
@@ -19,6 +22,7 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('auth:sanctum')->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
+            Route::patch('/profile', [AuthController::class, 'updateProfile']);
             Route::post('/logout', [AuthController::class, 'logout']);
         });
     });

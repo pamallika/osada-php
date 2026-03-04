@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LinkedAccount extends Model
 {
-    protected $fillable = ['user_id', 'provider', 'provider_id', 'username', 'avatar'];
+    protected $fillable = ['user_id', 'provider', 'provider_id', 'username', 'display_name', 'avatar'];
 
     public function user(): BelongsTo
     {

@@ -17,6 +17,16 @@ class User extends Authenticatable
         return $this->hasMany(LinkedAccount::class);
     }
 
+    public function linked_accounts(): HasMany
+    {
+        return $this->linkedAccounts();
+    }
+
+    public function profile(): \Illuminate\Database\Eloquent\Relations\HasOne
+    {
+        return $this->hasOne(UserProfile::class);
+    }
+
     public function guildMemberships(): HasMany
     {
         return $this->hasMany(GuildMember::class);

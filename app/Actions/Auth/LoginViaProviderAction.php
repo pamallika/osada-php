@@ -18,18 +18,20 @@ class LoginViaProviderAction
             if ($linkedAccount) {
                 $linkedAccount->update([
                     'username' => $providerData['username'] ?? $linkedAccount->username,
+                    'display_name' => $providerData['display_name'] ?? $linkedAccount->display_name,
                     'avatar' => $providerData['avatar'] ?? $linkedAccount->avatar,
                 ]);
                 $user = $linkedAccount->user;
             } else {
                 $user = User::query()->create([
-                    'name' => $providerData['username'] ?? 'Unknown User',
+                    'name' => $providerData['display_name'] ?? $providerData['username'] ?? 'Unknown User',
                 ]);
 
                 $user->linkedAccounts()->create([
                     'provider' => $provider,
                     'provider_id' => $providerData['id'],
                     'username' => $providerData['username'] ?? null,
+                    'display_name' => $providerData['display_name'] ?? null,
                     'avatar' => $providerData['avatar'] ?? null,
                 ]);
             }
