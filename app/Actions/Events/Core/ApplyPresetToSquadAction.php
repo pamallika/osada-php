@@ -32,6 +32,10 @@ class ApplyPresetToSquadAction
                 }
             }
 
+            if ($addedCount > 0) {
+                \App\Jobs\UpdateMessengerEventMessage::dispatch($squad->event_id)->delay(now()->addSeconds(5));
+            }
+
             return $addedCount;
         });
     }

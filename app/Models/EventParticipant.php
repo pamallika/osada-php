@@ -12,13 +12,9 @@ class EventParticipant extends Model
 
     protected static function booted()
     {
-        static::saved(function ($participant) {
-            UpdateMessengerEventMessage::dispatch($participant->event_id)->delay(now()->addSeconds(5));
-        });
-
-        static::deleted(function ($participant) {
-            UpdateMessengerEventMessage::dispatch($participant->event_id)->delay(now()->addSeconds(5));
-        });
+        // Removed automatic job dispatch on saved/deleted events
+        // as this causes queue spam when creating multiple participants.
+        // It must be called explicitly in controllers or actions after data is saved.
     }
 
     public function user(): BelongsTo

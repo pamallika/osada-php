@@ -39,6 +39,11 @@ class UpdateEventStatusAction
                 }
             }
 
+            // Если есть изменения в статусе или настройках уведомлений
+            if ($status === 'published' || $notificationSettings) {
+                \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+            }
+
             return $event;
         });
     }

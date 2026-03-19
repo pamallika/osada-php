@@ -25,22 +25,22 @@ class EventFullResource extends JsonResource
             'public_channel_id' => $this->guild->public_channel_id ?? null,
             'squads' => SquadResource::collection($this->squads),
             'pending_users' => $pendingParticipants->values()->map(fn($p) => [
-                'id' => $p->user->id,
-                'name' => !empty($p->user->profile?->family_name) 
-                    ? $p->user->profile->family_name 
-                    : (!empty($p->user->profile?->global_name) ? $p->user->profile->global_name : 'User_' . $p->user->id),
-                'family_name' => $p->user->profile->family_name ?? 'Unknown',
-                'global_name' => $p->user->profile->global_name ?? null,
-                'profile' => $p->user->profile,
+                'id' => $p->user?->id,
+                'name' => !empty($p->user?->profile?->family_name) 
+                    ? $p->user?->profile?->family_name 
+                    : (!empty($p->user?->profile?->global_name) ? $p->user?->profile?->global_name : 'User_' . $p->user?->id),
+                'family_name' => $p->user?->profile?->family_name ?? 'Unknown',
+                'global_name' => $p->user?->profile?->global_name ?? null,
+                'profile' => $p->user?->profile,
             ]),
             'declined_users' => $declinedParticipants->values()->map(fn($p) => [
-                'id' => $p->user->id,
-                'name' => !empty($p->user->profile?->family_name) 
-                    ? $p->user->profile->family_name 
-                    : (!empty($p->user->profile?->global_name) ? $p->user->profile->global_name : 'User_' . $p->user->id),
-                'family_name' => $p->user->profile->family_name ?? 'Unknown',
-                'global_name' => $p->user->profile->global_name ?? null,
-                'profile' => $p->user->profile,
+                'id' => $p->user?->id,
+                'name' => !empty($p->user?->profile?->family_name) 
+                    ? $p->user?->profile?->family_name 
+                    : (!empty($p->user?->profile?->global_name) ? $p->user?->profile?->global_name : 'User_' . $p->user?->id),
+                'family_name' => $p->user?->profile?->family_name ?? 'Unknown',
+                'global_name' => $p->user?->profile?->global_name ?? null,
+                'profile' => $p->user?->profile,
             ]),
             'stats' => [
                 'total_confirmed' => $confirmedParticipants->count(),

@@ -36,6 +36,7 @@ class ToggleParticipationAction
                         'squad_id' => null
                     ]);
                 }
+                \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
                 return true;
             }
 
@@ -72,6 +73,8 @@ class ToggleParticipationAction
                     'squad_id' => $squadId
                 ]);
             }
+
+            \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
 
             return true;
         });
