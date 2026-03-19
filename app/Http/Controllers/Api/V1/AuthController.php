@@ -92,15 +92,20 @@ class AuthController extends Controller
         ], 'Successfully authenticated');
     }
 
-    public function initTelegramDeepLink(InitiateTelegramDeepLinkAction $action): JsonResponse
+    public function initTelegramDeepLink(Request $request, InitiateTelegramDeepLinkAction $action): JsonResponse
     {
-        $code = $action->execute();
+        $request->validate([
+            'verifier_hash' => 'required|string'
+        ]);
+
+        $code = $action->execute($request->input('verifier_hash'));
         return $this->successResponse(['auth_code' => $code]);
     }
 
-    public function checkTelegramDeepLink(string $code, CheckTelegramDeepLinkStatusAction $action): JsonResponse
+    public function checkTelegramDeepLink(Request $request, string $code, CheckTelegramDeepLinkStatusAction $action): JsonResponse
     {
-        $result = $action->execute($code);
+        $verifier = $request->query('verifier');
+        $result = $action->execute($code, $verifier);
 
         if (!$result) {
             return $this->errorResponse('Invalid or expired auth code.', 404);

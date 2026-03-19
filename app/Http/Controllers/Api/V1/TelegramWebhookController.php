@@ -63,9 +63,9 @@ class TelegramWebhookController extends Controller
         // NEW LOGIC: Deep Link Auth
         if (str_starts_with($token, 'auth_')) {
             $code = substr($token, 5);
-            $status = Cache::get('telegram_auth_code_' . $code);
+            $data = Cache::get('telegram_auth_code_' . $code);
 
-            if (!$status || $status !== 'pending') {
+            if (!$data || !is_array($data) || $data['status'] !== 'pending') {
                 Telegram::sendMessage([
                     'chat_id' => $chatId,
                     'text' => '⚠️ Invalid or expired auth code.'
@@ -84,12 +84,20 @@ class TelegramWebhookController extends Controller
             $action = app(\App\Actions\Auth\AuthenticateTelegramAction::class);
             $user = $action->findOrCreateUser($telegramId, $username, $displayName, $photoUrl);
 
-            // Link user to auth code for polling
-            Cache::put('telegram_auth_code_' . $code, $user->id, now()->addMinutes(5));
+            // Link user to auth code but keep verifier_hash for PKCE
+            $data['status'] = $user->id;
+            Cache::put('telegram_auth_code_' . $code, $data, now()->addMinutes(10));
+
+            $callbackUrl = config('app.frontend_url') . '/auth/callback?auth_code=' . $code;
 
             Telegram::sendMessage([
                 'chat_id' => $chatId,
-                'text' => '✅ Вы успешно авторизованы в SAGE! Теперь вы можете вернуться на сайт.'
+                'text' => "✅ Вы успешно авторизованы в SAGE!\n\nНажмите кнопку ниже, чтобы вернуться в приложение.",
+                'reply_markup' => json_encode([
+                    'inline_keyboard' => [[
+                        ['text' => '🛡️ ВОЙТИ В SAGE', 'url' => $callbackUrl]
+                    ]]
+                ])
             ]);
             return;
         }

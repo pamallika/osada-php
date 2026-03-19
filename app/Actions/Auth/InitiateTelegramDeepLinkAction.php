@@ -8,14 +8,18 @@ use Illuminate\Support\Str;
 class InitiateTelegramDeepLinkAction
 {
     /**
+     * @param string $verifierHash
      * @return string Auth code
      */
-    public function execute(): string
+    public function execute(string $verifierHash): string
     {
         $code = Str::random(32);
         
-        // Store empty user_id in cache, indicating pending status
-        Cache::put('telegram_auth_code_' . $code, 'pending', now()->addMinutes(5));
+        // Store pending status and verifier hash in cache
+        Cache::put('telegram_auth_code_' . $code, [
+            'status' => 'pending',
+            'verifier_hash' => $verifierHash
+        ], now()->addMinutes(10));
 
         return $code;
     }
