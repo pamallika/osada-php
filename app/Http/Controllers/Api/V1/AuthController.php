@@ -2,26 +2,78 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Auth\GetAuthenticatedUserAction;
+use App\Actions\Auth\LoginUserAction;
+use App\Actions\Auth\LoginViaProviderAction;
+use App\Actions\Auth\RegisterUserAction;
+use App\Actions\Auth\UpdateUserProfileAction;
 use App\Enums\SocialProvider;
 use App\Http\Controllers\Controller;
-use App\Actions\Auth\LoginViaProviderAction;
-use Illuminate\Http\Request;
+use App\Http\Requests\Api\V1\Auth\LoginRequest;
+use App\Http\Requests\Api\V1\Auth\RegisterRequest;
+use App\Http\Requests\Api\V1\Auth\UpdateProfileRequest;
+use App\Traits\ApiResponser;
+use App\Actions\Telegram\GenerateTelegramBindingLink;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
+
+use App\Http\Requests\Api\V1\Auth\UpdateAccountRequest;
+use App\Actions\Auth\UpdateUserAccountAction;
+use App\Actions\Auth\UnlinkAccountAction;
+use App\Actions\Auth\InitiateTelegramDeepLinkAction;
+use App\Actions\Auth\CheckTelegramDeepLinkStatusAction;
+use App\Actions\Auth\InitiateSocialLinkAction;
+use App\Http\Resources\Api\V1\UserResource;
+use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class AuthController extends Controller
 {
+    use ApiResponser;
+
+    public function initSocialLink(Request $request, InitiateSocialLinkAction $action): JsonResponse
+    {
+        $code = $action->execute($request->user()->id);
+        return $this->successResponse(['link_code' => $code]);
+    }
+
+    public function telegramLink(Request $request, GenerateTelegramBindingLink $action): JsonResponse
+    {
+        $link = $action->execute($request->user()->id);
+        return $this->successResponse(['link' => $link]);
+    }
+
+    public function register(RegisterRequest $request, RegisterUserAction $action): JsonResponse
+    {
+        $result = $action->execute($request->validated());
+
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'User registered successfully', 201);
+    }
+
+    public function basicLogin(LoginRequest $request, LoginUserAction $action): JsonResponse
+    {
+        $result = $action->execute($request->validated());
+
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'Logged in successfully');
+    }
+
     public function login(
         string $provider,
         Request $request,
         LoginViaProviderAction $loginAction
     ): JsonResponse {
-        if (!SocialProvider::tryFrom($provider)) {
-            return response()->json(['message' => 'Unsupported provider'], 400);
+        if (!in_array($provider, SocialProvider::values())) {
+            return $this->errorResponse('Unsupported provider', 400);
         }
 
-        // TODO: Здесь должна быть валидация токена от провайдера (Socialite / Telegram Hash)
-        // Для примера симулируем, что мы успешно проверили токен и получили данные профиля:
         $providerData = $request->validate([
             'id' => 'required|string',
             'username' => 'nullable|string',
@@ -31,94 +83,151 @@ class AuthController extends Controller
 
         $token = $loginAction->execute($provider, $providerData);
 
-        return response()->json([
-            'message' => 'Successfully authenticated',
+        return $this->successResponse([
             'token' => $token,
             'token_type' => 'Bearer'
-        ]);
+        ], 'Successfully authenticated');
     }
 
-    public function me(Request $request): JsonResponse
+    public function initTelegramDeepLink(InitiateTelegramDeepLinkAction $action): JsonResponse
     {
-        $user = $request->user();
+        $code = $action->execute();
+        return $this->successResponse(['auth_code' => $code]);
+    }
 
-        if (!$user->profile) {
-            $user->profile()->create([
-                'family_name' => '',
-                'char_class' => 'None',
-                'gear_score' => 0,
-                'attack' => 0,
-                'awakening_attack' => 0,
-                'defense' => 0,
-                'level' => 1,
-            ]);
+    public function checkTelegramDeepLink(string $code, CheckTelegramDeepLinkStatusAction $action): JsonResponse
+    {
+        $result = $action->execute($code);
+
+        if (!$result) {
+            return $this->errorResponse('Invalid or expired auth code.', 404);
         }
 
-        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
+        if ($result['status'] === 'pending') {
+            return response()->json([
+                'status' => 'success',
+                'data' => ['status' => 'pending']
+            ], 200);
+        }
 
-        return response()->json(['data' => $user]);
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'Successfully authenticated via Telegram Deep Link');
     }
 
-    public function updateProfile(Request $request): JsonResponse
+    public function loginViaTelegram(
+        Request $request,
+        \App\Actions\Auth\LoginViaTelegramInitData $tmaAction,
+        \App\Actions\Auth\AuthenticateTelegramAction $widgetAction
+    ): JsonResponse {
+        if ($request->has('initData')) {
+            $token = $tmaAction->execute($request->input('initData'));
+
+            if (!$token) {
+                return $this->errorResponse('Authentication failed. Make sure your account is linked to SAGE.', 401);
+            }
+
+            return $this->successResponse([
+                'token' => $token,
+                'token_type' => 'Bearer'
+            ], 'Successfully authenticated via TMA');
+        }
+
+        $result = $widgetAction->execute($request->all());
+
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'Successfully authenticated via Telegram Widget');
+    }
+
+    public function me(Request $request, GetAuthenticatedUserAction $action): JsonResponse
     {
-        $validated = $request->validate([
-            'family_name' => 'required|string|max:255',
-            'char_class' => 'required|string|max:255',
-            'level' => 'required|integer|min:1|max:100',
-            'attack' => 'required|integer|min:0|max:1000',
-            'awk_attack' => 'required|integer|min:0|max:1000',
-            'defense' => 'required|integer|min:0|max:1000',
-        ]);
+        $user = $action->execute($request->user());
 
-        $user = $request->user();
+        return $this->successResponse(new UserResource($user));
+    }
 
-        $gearScore = max($validated['attack'], $validated['awk_attack']) + $validated['defense'];
+    public function updateProfile(UpdateProfileRequest $request, UpdateUserProfileAction $action): JsonResponse
+    {
+        $user = $action->execute($request->user(), $request->validated());
+        $user->load(['profile', 'linked_accounts']);
 
-        $user->profile()->updateOrCreate(
-            ['user_id' => $user->id],
-            [
-                'family_name' => $validated['family_name'],
-                'char_class' => $validated['char_class'],
-                'level' => $validated['level'],
-                'attack' => $validated['attack'],
-                'awakening_attack' => $validated['awk_attack'],
-                'defense' => $validated['defense'],
-                'gear_score' => $gearScore,
-            ]
-        );
+        return $this->successResponse(new UserResource($user), 'Profile updated successfully');
+    }
 
-        return $this->me($request);
+    public function updateAccount(UpdateAccountRequest $request, UpdateUserAccountAction $action): JsonResponse
+    {
+        $user = $action->execute($request->user(), $request->validated());
+        $user->load(['profile', 'linked_accounts']);
+
+        return $this->successResponse(new UserResource($user), 'Account updated successfully');
+    }
+
+    public function unlinkAccount(string $provider, Request $request, UnlinkAccountAction $action): JsonResponse
+    {
+        $user = $action->execute($request->user(), $provider);
+        $user->load(['profile', 'linked_accounts']);
+
+        return $this->successResponse(new UserResource($user), 'Account unlinked successfully');
     }
 
     public function logout(Request $request): JsonResponse
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json(['message' => 'Logged out successfully']);
+        return $this->successResponse(null, 'Logged out successfully');
     }
 
-    public function redirect()
+    public function redirect(Request $request)
     {
-        return Socialite::driver('discord')->stateless()->redirect();
+        $linkCode = $request->query('link_code');
+
+        $driver = Socialite::driver(SocialProvider::DISCORD);
+
+        if ($linkCode) {
+            $driver->with(['state' => $linkCode]);
+        }
+
+        return $driver->stateless()->redirect();
     }
 
-    public function callback(LoginViaProviderAction $loginAction)
+    public function callback(Request $request, LoginViaProviderAction $loginAction)
     {
         try {
-            $discordUser = Socialite::driver(SocialProvider::DISCORD->value)->stateless()->user();
+            $discordUser = Socialite::driver(SocialProvider::DISCORD)->stateless()->user();
+            
+            $state = $request->input('state');
+            $currentUser = null;
+
+            if ($state) {
+                $userId = Cache::get("social_link_{$state}");
+                if ($userId) {
+                    $currentUser = User::find($userId);
+                    Cache::forget("social_link_{$state}");
+                }
+            }
 
             $providerData = [
                 'id' => $discordUser->getId(),
-                'username' => $discordUser->getNickname(), // In discord driver: nickname is the username
+                'username' => $discordUser->getNickname(),
                 'display_name' => $discordUser->user['global_name'] ?? $discordUser->getName(),
                 'avatar' => $discordUser->getAvatar(),
             ];
 
-            $token = $loginAction->execute(SocialProvider::DISCORD->value, $providerData);
+            $token = $loginAction->execute(SocialProvider::DISCORD, $providerData, $currentUser);
+
+            if ($currentUser) {
+                return redirect(config('app.frontend_url') . '/profile?linked=success');
+            }
 
             return redirect(config('app.frontend_url') . '/auth/callback?token=' . $token);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return redirect(config('app.frontend_url') . '/profile?error=already_linked');
         } catch (\Exception $e) {
+            Log::error('Discord Callback Error: ' . $e->getMessage());
             return redirect(config('app.frontend_url') . '/login?error=auth_failed');
         }
     }

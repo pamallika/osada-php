@@ -2,17 +2,31 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Event extends Model
 {
-    protected $fillable = ['name', 'description', 'guild_id', 'region', 'start_at', 'total_slots', 'is_free_registration', 'status', 'discord_message_id'];
+    use HasFactory;
+    protected $fillable = [
+        'name', 
+        'description', 
+        'guild_id', 
+        'start_at', 
+        'total_slots', 
+        'is_free_registration', 
+        'status', 
+        'notification_settings',
+        'discord_message_id',
+        'telegram_message_id'
+    ];
 
     protected $casts = [
         'start_at' => 'datetime',
         'is_free_registration' => 'boolean',
+        'notification_settings' => 'array',
     ];
 
     public function squads(): HasMany

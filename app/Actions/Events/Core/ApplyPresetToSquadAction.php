@@ -16,7 +16,7 @@ class ApplyPresetToSquadAction
             $preset->load('users');
 
             foreach ($preset->users as $user) {
-                // Проверяем, не записан ли уже этот юзер на этот ивент (в любой отряд или резерв)
+                // Проверяем, не записан ли уже этот пользователь на это событие (в любой отряд или резерв)
                 $exists = EventParticipant::query()->where('event_id', $squad->event_id)
                     ->where('user_id', $user->id)
                     ->exists();

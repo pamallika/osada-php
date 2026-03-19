@@ -7,13 +7,17 @@ use App\Http\Controllers\Controller;
 use App\Actions\Guilds\GenerateInviteAction;
 use App\Models\Guild;
 use App\Models\GuildInvite;
+use App\Traits\ApiResponser;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 
 class GuildInviteController extends Controller
 {
+    use ApiResponser;
+
     public function store(Request $request, Guild $guild, GenerateInviteAction $action)
     {
-        // TODO: Добавить проверку Gate/Policy, что $request->user() является лидером или офицером этой гильдии
+        $this->authorize('createInvite', $guild);
 
         $validated = $request->validate([
             'max_uses' => 'nullable|integer|min:1',
@@ -22,11 +26,10 @@ class GuildInviteController extends Controller
 
         $invite = $action->execute($guild, $request->user(), $validated);
 
-        return response()->json([
-            'message' => 'Invite generated',
+        return $this->successResponse([
             'invite_url' => config('app.url') . '/invite/' . $invite->token,
-            'data' => $invite
-        ], 201);
+            'invite' => $invite
+        ], 'Invite generated', 201);
     }
 
     public function show(string $token)
@@ -36,14 +39,12 @@ class GuildInviteController extends Controller
             ->firstOrFail();
 
         if (!$invite->isValid()) {
-            return response()->json(['message' => 'Invite is no longer valid'], 400);
+            return $this->errorResponse('Invite is no longer valid', 400);
         }
 
-        return response()->json([
-            'data' => [
-                'guild' => $invite->guild,
-                'invited_by' => $invite->creator,
-            ]
+        return $this->successResponse([
+            'guild' => $invite->guild,
+            'invited_by' => $invite->creator,
         ]);
     }
 
@@ -51,8 +52,36 @@ class GuildInviteController extends Controller
     {
         $action->execute($request->user(), $token);
 
-        return response()->json([
-            'message' => 'Successfully joined the guild!'
+        return $this->successResponse(null, 'Заявка подана');
+    }
+
+    public function myInvite(Request $request, GenerateInviteAction $action): JsonResponse
+    {
+        $user = $request->user();
+        $membership = $user->guildMemberships()->where('status', 'active')->firstOrFail();
+        $guild = $membership->guild;
+
+        $invite = $guild->invites()->get()->first(fn($i) => $i->isValid());
+
+        if (!$invite) {
+            $roles = [
+                'member' => 1,
+                'officer' => 2,
+                'admin' => 3,
+                'creator' => 4,
+            ];
+
+            $currentRoleWeight = $roles[$membership->role] ?? 0;
+
+            if ($currentRoleWeight < 2) { // Less than officer
+                return $this->errorResponse('No active invite found. Please ask an officer to generate one.', 403, 'INSUFFICIENT_PERMISSIONS');
+            }
+
+            $invite = $action->execute($guild, $user, []);
+        }
+
+        return $this->successResponse([
+            'url' => config('app.url') . '/invite/' . $invite->token
         ]);
     }
 }

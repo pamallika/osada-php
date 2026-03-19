@@ -21,12 +21,18 @@ trait ApiResponser
     /**
      * Стандартный ответ с ошибкой
      */
-    protected function errorResponse($message, $code): JsonResponse
+    protected function errorResponse($message, $code, $errorCode = null): JsonResponse
     {
-        return response()->json([
+        $response = [
             'status' => 'error',
             'message' => $message,
             'data' => null
-        ], $code);
+        ];
+
+        if ($errorCode) {
+            $response['error'] = $errorCode;
+        }
+
+        return response()->json($response, $code);
     }
 }

@@ -8,12 +8,19 @@ class ParticipantResource extends JsonResource
 {
     public function toArray($request)
     {
-        return [
-            'discord_id' => $this->user->discord_id,
+        $profile = $this->user->profile;
+        $discordAccount = $this->user->linkedAccounts->where('provider', 'discord')->first();
 
-            'display_name' => $this->user->profile->family_name
-                ?? $this->user->global_name
-                    ?? $this->user->username,
+        return [
+            'user_id' => $this->user_id,
+            'discord_id' => $discordAccount->provider_id ?? null,
+            'family_name' => $profile->family_name ?? 'Unknown',
+            'global_name' => $profile->global_name ?? null,
+            
+            // display_name для обратной совместимости или удобства фронта
+            'display_name' => !empty($profile->family_name) 
+                ? $profile->family_name 
+                : (!empty($profile->global_name) ? $profile->global_name : 'User_' . $this->user_id),
 
             'status' => $this->status,
         ];

@@ -2,14 +2,15 @@
 
 namespace App\Models;
 
-use GuildIntegration;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Guild extends Model
 {
-    protected $fillable = ['name', 'slug', 'owner_id', 'logo_url'];
+    use HasFactory;
+    protected $fillable = ['name', 'slug', 'owner_id', 'logo_url', 'invite_slug', 'status'];
 
     public function owner(): BelongsTo
     {
@@ -18,7 +19,7 @@ class Guild extends Model
 
     public function integrations(): HasMany
     {
-        return $this->hasMany(GuildIntegration::class);
+        return $this->hasMany(self::class . 'Integration');
     }
 
     public function members(): HasMany

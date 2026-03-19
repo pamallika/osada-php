@@ -1,12 +1,13 @@
 <?php
 
-use App\Models\Guild;
+namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GuildIntegration extends Model
 {
-    protected $fillable = ['guild_id', 'provider', 'platform_id', 'announcement_channel_id', 'settings'];
+    protected $fillable = ['guild_id', 'provider', 'platform_id', 'platform_title', 'announcement_channel_id', 'settings'];
 
     protected $casts = [
         'settings' => 'array',

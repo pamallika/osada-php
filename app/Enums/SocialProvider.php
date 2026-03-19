@@ -2,13 +2,16 @@
 
 namespace App\Enums;
 
-enum SocialProvider: string
+class SocialProvider
 {
-    case DISCORD = 'discord';
-    case TELEGRAM = 'telegram';
+    public const DISCORD = 'discord';
+    public const TELEGRAM = 'telegram';
 
     public static function values(): array
     {
-        return array_column(self::cases(), 'value');
+        return [
+            self::DISCORD,
+            self::TELEGRAM,
+        ];
     }
 }

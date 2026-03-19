@@ -6,6 +6,7 @@ use App\Actions\Events\Core\ToggleParticipationAction;
 use App\Models\Event;
 use App\Models\EventSquad;
 use App\Models\User;
+use App\Models\LinkedAccount;
 
 class HandleDiscordParticipation
 {
@@ -15,7 +16,11 @@ class HandleDiscordParticipation
 
     public function execute(array $data)
     {
-        $user = User::query()->where('discord_id', $data['discord_user_id'])->firstOrFail();
+        $linkedAccount = LinkedAccount::where('provider', 'discord')
+            ->where('provider_id', $data['discord_user_id'])
+            ->firstOrFail();
+
+        $user = $linkedAccount->user;
 
         // Если пришел squad_id, находим event_id через отряд, если он не передан явно
         $event = isset($data['event_id'])
@@ -29,6 +34,6 @@ class HandleDiscordParticipation
             $data['squad_id'] ?? null
         );
 
-        return $event; // Возвращаем ивент для ресурса
+        return $event; // Возвращаем событие для ресурса
     }
 }

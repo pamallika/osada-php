@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('guild_id')->constrained()->onDelete('cascade');
             $table->string('title');
+            $table->json('structure')->nullable();
             $table->timestamps();
         });
     }

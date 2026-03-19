@@ -7,7 +7,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Preset extends Model
 {
-    protected $fillable = ['guild_id', 'title'];
+    protected $fillable = ['guild_id', 'title', 'structure'];
+
+    protected $casts = [
+        'structure' => 'array',
+    ];
+
 
     public function users(): BelongsToMany
     {

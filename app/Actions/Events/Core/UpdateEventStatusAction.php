@@ -3,12 +3,43 @@
 namespace App\Actions\Events\Core;
 
 use App\Models\Event;
+use App\Models\EventParticipant;
+use Illuminate\Support\Facades\DB;
 
 class UpdateEventStatusAction
 {
-    public function execute(Event $event, string $status): Event
+    public function execute(Event $event, string $status, ?array $notificationSettings = null): Event
     {
-        $event->update(['status' => $status]);
-        return $event;
+        return DB::transaction(function () use ($event, $status, $notificationSettings) {
+            $oldStatus = $event->status;
+            
+            $updateData = ['status' => $status];
+            if ($notificationSettings) {
+                $updateData['notification_settings'] = $notificationSettings;
+            }
+            
+            $event->update($updateData);
+
+            // Если событие переходит в статус published из любого другого статуса (обычно из draft)
+            if ($status === 'published' && $oldStatus !== 'published') {
+                $activeMemberUserIds = $event->guild->members()
+                    ->where('status', 'active')
+                    ->pluck('user_id');
+
+                foreach ($activeMemberUserIds as $userId) {
+                    EventParticipant::query()->firstOrCreate(
+                        [
+                            'event_id' => $event->id,
+                            'user_id' => $userId,
+                        ],
+                        [
+                            'status' => 'pending',
+                        ]
+                    );
+                }
+            }
+
+            return $event;
+        });
     }
 }

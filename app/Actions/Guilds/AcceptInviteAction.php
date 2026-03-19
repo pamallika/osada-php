@@ -4,39 +4,41 @@ namespace App\Actions\Guilds;
 
 use App\Models\GuildInvite;
 use App\Models\User;
-use App\Models\GuildMember;
 use App\Enums\GuildRole;
-use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpKernel\Exception\HttpException;
+use Illuminate\Validation\ValidationException;
 
 class AcceptInviteAction
 {
-    public function execute(User $user, string $token): GuildMember
+    /**
+     * @param User $user
+     * @param string $token
+     * @return void
+     * @throws ValidationException
+     */
+    public function execute(User $user, string $token): void
     {
-        return DB::transaction(function () use ($user, $token) {
-            $invite = GuildInvite::query()->where('token', $token)->lockForUpdate()->firstOrFail();
+        $invite = GuildInvite::where('token', $token)->first();
 
-            if (!$invite->isValid()) {
-                abort(400, 'This invite link is invalid, expired, or has reached its usage limit.');
-            }
-
-            $alreadyMember = GuildMember::query()->where('guild_id', $invite->guild_id)
-                ->where('user_id', $user->id)
-                ->exists();
-
-            if ($alreadyMember) {
-                abort(409, 'You are already a member of this guild.');
-            }
-
-            $member = GuildMember::query()->create([
-                'guild_id' => $invite->guild_id,
-                'user_id' => $user->id,
-                'role' => GuildRole::MEMBER,
+        if (!$invite || !$invite->isValid()) {
+            throw ValidationException::withMessages([
+                'invite' => ['The invite is invalid or expired.'],
             ]);
+        }
 
-            $invite->increment('uses');
+        // Check if user is already in a guild (any status)
+        if ($user->guildMemberships()->exists()) {
+            throw ValidationException::withMessages([
+                'invite' => ['You are already a member or have a pending application in a guild.'],
+            ]);
+        }
 
-            return $member;
-        });
+        $invite->guild->members()->create([
+            'user_id' => $user->id,
+            'role' => GuildRole::MEMBER,
+            'status' => 'pending',
+            'joined_at' => now(),
+        ]);
+
+        $invite->increment('uses');
     }
 }

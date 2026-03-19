@@ -8,11 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class GuildMember extends Model
 {
-    protected $fillable = ['guild_id', 'user_id', 'role'];
+    protected $fillable = ['guild_id', 'user_id', 'role', 'joined_at', 'status'];
 
-    protected $casts = [
-        'role' => GuildRole::class,
-    ];
+    // Roles: creator, admin, officer, member
 
     public function guild(): BelongsTo
     {

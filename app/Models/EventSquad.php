@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class EventSquad extends Model
 {
-    protected $fillable = ['event_id', 'title', 'slots_limit', 'position'];
+    protected $fillable = ['event_id', 'title', 'slots_limit', 'position', 'is_system'];
 
     public function event(): BelongsTo
     {

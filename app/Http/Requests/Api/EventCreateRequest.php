@@ -22,8 +22,8 @@ class EventCreateRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'discord_guild_id' => 'required|string',
-            'region' => 'required|string',
+            'discord_guild_id' => 'required_without:guild_id|string',
+            'guild_id' => 'required_without:discord_guild_id|exists:guilds,id',
             'start_at' => 'required|date',
             'total_slots' => 'nullable|integer|min:0', // Сделано необязательным
             'is_free_registration' => 'boolean',
