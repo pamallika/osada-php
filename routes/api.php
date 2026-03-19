@@ -40,6 +40,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/telegram/init', [AuthController::class, 'initTelegramDeepLink']);
         Route::get('/telegram/check/{code}', [AuthController::class, 'checkTelegramDeepLink']);
         Route::post('/telegram/login', [AuthController::class, 'loginViaTelegram']);
+        Route::post('/telegram/verify', [AuthController::class, 'tmaVerify']);
+        Route::post('/telegram/register', [AuthController::class, 'tmaRegister']);
         Route::post('/login/{provider}', [AuthController::class, 'login']);
         Route::get('/redirect/discord', [AuthController::class, 'redirect']);
         Route::get('/callback/discord', [AuthController::class, 'callback']);
@@ -48,6 +50,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/me', [AuthController::class, 'me']);
             Route::get('/telegram-link', [AuthController::class, 'telegramLink']);
             Route::post('/social/link-init', [AuthController::class, 'initSocialLink']);
+            Route::post('/telegram/link', [AuthController::class, 'tmaLink']);
             Route::patch('/profile', [AuthController::class, 'updateProfile']);
             Route::patch('/account', [AuthController::class, 'updateAccount']);
             Route::delete('/linked-accounts/{provider}', [AuthController::class, 'unlinkAccount']);

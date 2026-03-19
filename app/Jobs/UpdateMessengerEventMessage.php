@@ -71,24 +71,24 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
         }
 
         $text = $this->formatTelegramMessage($event);
-        $frontendUrl = env('FRONTEND_URL', config('app.url'));
-        $eventUrl = rtrim($frontendUrl, '/') . "/events/{$event->id}";
+        $botName = env('TELEGRAM_BOT_NAME', 'arigami_sage_bot');
+        $deepLink = "https://t.me/{$botName}/direct?startapp=event_{$event->id}";
 
         $keyboard = [
             'inline_keyboard' => [
                 [
                     [
                         'text' => 'Открыть SAGE и Записаться',
-                        'web_app' => ['url' => $eventUrl]
+                        'url' => $deepLink
                     ]
                 ]
             ]
         ];
 
         try {
-            if ($event->telegram_message_id) {
+            if ($event->telegram_message_id && $event->telegram_chat_id) {
                 Telegram::editMessageText([
-                    'chat_id' => $integration->platform_id,
+                    'chat_id' => $event->telegram_chat_id,
                     'message_id' => $event->telegram_message_id,
                     'text' => $text,
                     'parse_mode' => 'HTML',
@@ -101,7 +101,10 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
                     'parse_mode' => 'HTML',
                     'reply_markup' => json_encode($keyboard)
                 ]);
-                $event->update(['telegram_message_id' => $response->getMessageId()]);
+                $event->update([
+                    'telegram_message_id' => $response->getMessageId(),
+                    'telegram_chat_id' => $integration->platform_id
+                ]);
             }
         } catch (\Exception $e) {
             Log::error("Telegram Update Error: " . $e->getMessage());

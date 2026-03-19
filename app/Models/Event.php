@@ -20,7 +20,8 @@ class Event extends Model
         'status', 
         'notification_settings',
         'discord_message_id',
-        'telegram_message_id'
+        'telegram_message_id',
+        'telegram_chat_id'
     ];
 
     protected $casts = [

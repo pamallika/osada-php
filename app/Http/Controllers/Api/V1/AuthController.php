@@ -25,6 +25,9 @@ use App\Actions\Auth\UnlinkAccountAction;
 use App\Actions\Auth\InitiateTelegramDeepLinkAction;
 use App\Actions\Auth\CheckTelegramDeepLinkStatusAction;
 use App\Actions\Auth\InitiateSocialLinkAction;
+use App\Actions\Auth\TelegramTmaVerifyAction;
+use App\Actions\Auth\TelegramTmaRegisterAction;
+use App\Actions\Auth\TelegramTmaLinkAction;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
@@ -118,28 +121,51 @@ class AuthController extends Controller
 
     public function loginViaTelegram(
         Request $request,
-        \App\Actions\Auth\LoginViaTelegramInitData $tmaAction,
         \App\Actions\Auth\AuthenticateTelegramAction $widgetAction
     ): JsonResponse {
-        if ($request->has('initData')) {
-            $token = $tmaAction->execute($request->input('initData'));
-
-            if (!$token) {
-                return $this->errorResponse('Authentication failed. Make sure your account is linked to SAGE.', 401);
-            }
-
-            return $this->successResponse([
-                'token' => $token,
-                'token_type' => 'Bearer'
-            ], 'Successfully authenticated via TMA');
-        }
-
         $result = $widgetAction->execute($request->all());
 
         return $this->successResponse([
             'token' => $result['token'],
             'user' => new UserResource($result['user']),
         ], 'Successfully authenticated via Telegram Widget');
+    }
+
+    public function tmaVerify(Request $request, TelegramTmaVerifyAction $action): JsonResponse
+    {
+        $request->validate(['initData' => 'required|string']);
+
+        $result = $action->execute($request->input('initData'));
+
+        if (!$result) {
+            return $this->errorResponse('Not Found', 404);
+        }
+
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'Successfully verified via TMA');
+    }
+
+    public function tmaRegister(Request $request, TelegramTmaRegisterAction $action): JsonResponse
+    {
+        $request->validate(['initData' => 'required|string']);
+
+        $result = $action->execute($request->input('initData'));
+
+        return $this->successResponse([
+            'token' => $result['token'],
+            'user' => new UserResource($result['user']),
+        ], 'Successfully registered via TMA', 201);
+    }
+
+    public function tmaLink(Request $request, TelegramTmaLinkAction $action): JsonResponse
+    {
+        $request->validate(['initData' => 'required|string']);
+
+        $user = $action->execute($request->user(), $request->input('initData'));
+
+        return $this->successResponse(new UserResource($user), 'Successfully linked Telegram account');
     }
 
     public function me(Request $request, GetAuthenticatedUserAction $action): JsonResponse
