@@ -78,7 +78,7 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
             'inline_keyboard' => [
                 [
                     [
-                        'text' => 'Открыть SAGE и Записаться',
+                        'text' => 'Участие',
                         'url' => $deepLink
                     ]
                 ]
@@ -114,7 +114,7 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
     protected function updateDiscord(Event $event)
     {
         $botJsUrl = env('BOTJS_URL', 'http://localhost:3000') . '/update-event';
-        
+
         try {
             Http::post($botJsUrl, [
                 'guild_id' => $event->guild->platform_id ?? null,
@@ -130,7 +130,7 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
     protected function formatTelegramMessage(Event $event): string
     {
         $isFirstTime = empty($event->telegram_message_id);
-        
+
         $name = htmlspecialchars($event->name);
         $text = "<b>{$name}</b>\n";
         $text .= "Time: " . $event->start_at->format('Y-m-d H:i') . "\n";
@@ -139,10 +139,10 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
         foreach ($event->squads as $squad) {
             $confirmedParticipants = $squad->participants->where('status', 'confirmed');
             $count = $confirmedParticipants->count();
-            
+
             $nicknames = $confirmedParticipants->map(function($p) {
-                $displayName = !empty($p->user->profile->family_name) 
-                    ? $p->user->profile->family_name 
+                $displayName = !empty($p->user->profile->family_name)
+                    ? $p->user->profile->family_name
                     : ($p->user->profile->global_name ?? 'Player');
                 return htmlspecialchars($displayName);
             })->implode(', ');
@@ -164,7 +164,7 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
             foreach ($event->notification_settings['roles'] as $role) {
                 // In Telegram, there's no direct "role mention" by ID like in Discord for arbitrary bots usually,
                 // but we can assume these are some identifiers or we just list them if they are names.
-                // However, requirement says "Include role mentions". 
+                // However, requirement says "Include role mentions".
                 // For Telegram, role mentions are usually just text or special tags if supported.
                 // If they are discord role IDs, they won't work in TG.
                 // If they are telegram group/topic identifiers, maybe.
