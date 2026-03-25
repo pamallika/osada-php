@@ -8,6 +8,8 @@ use App\Models\EventSquad;
 use App\Models\Preset;
 use App\Actions\Events\Core\ApplyPresetToSquadAction;
 use App\Http\Resources\Api\Discord\EventFullResource;
+use App\Events\SquadUpdated;
+use App\Events\ParticipantUpdated;
 use App\Traits\ApiResponser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +28,13 @@ class EventSquadController extends Controller
         $preset = Preset::query()->findOrFail($request->preset_id);
 
         $addedCount = $action->execute($squad, $preset);
+
+        // Broadcast that the squad was updated (new participants)
+        broadcast(new SquadUpdated($squad->event_id, 'updated', [
+            'id' => $squad->id,
+            'title' => $squad->title,
+            'slots_limit' => $squad->slots_limit,
+        ]));
 
         return $this->successResponse(
             new EventFullResource($squad->event->load(['squads.participants.user.profile', 'participants.user.profile'])),
@@ -47,7 +56,7 @@ class EventSquadController extends Controller
             return $this->errorResponse('Cannot add squads to an archived event', 403);
         }
 
-        $event->squads()->create([
+        $squad = $event->squads()->create([
             'title' => $request->name,
             'slots_limit' => $request->limit,
             'position' => $event->squads()->count(),
@@ -55,6 +64,12 @@ class EventSquadController extends Controller
 
         $event->total_slots = $event->squads()->sum('slots_limit');
         $event->save();
+
+        broadcast(new SquadUpdated($event->id, 'created', [
+            'id' => $squad->id,
+            'title' => $squad->title,
+            'slots_limit' => $squad->slots_limit,
+        ]));
 
         \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
 
@@ -103,6 +118,12 @@ class EventSquadController extends Controller
         $event->total_slots = $event->squads()->sum('slots_limit');
         $event->save();
 
+        broadcast(new SquadUpdated($event->id, 'updated', [
+            'id' => $squad->id,
+            'title' => $squad->title,
+            'slots_limit' => $squad->slots_limit,
+        ]));
+
         \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
 
         return $this->successResponse(
@@ -130,6 +151,8 @@ class EventSquadController extends Controller
             // Находим системный "Резерв" для этого события
             $reserveSquad = $event->squads()->where('is_system', true)->first();
 
+            $participantIds = $squad->participants()->pluck('user_id')->toArray();
+
             if ($reserveSquad) {
                 // Перемещаем всех участников в Резерв
                 $squad->participants()->update(['squad_id' => $reserveSquad->id]);
@@ -138,10 +161,29 @@ class EventSquadController extends Controller
                 $squad->participants()->update(['squad_id' => null]);
             }
 
+            $squadIdForBroadcast = $squad->id;
+            $squadTitle = $squad->title;
+            $squadLimit = $squad->slots_limit;
+
             $squad->delete();
 
             $event->total_slots = $event->squads()->sum('slots_limit');
             $event->save();
+
+            broadcast(new SquadUpdated($event->id, 'deleted', [
+                'id' => $squadIdForBroadcast,
+                'title' => $squadTitle,
+                'slots_limit' => $squadLimit,
+            ]));
+
+            // Also broadcast participant moves if any
+            foreach ($participantIds as $userId) {
+                broadcast(new ParticipantUpdated($event->id, 'moved', [
+                    'user_id' => $userId,
+                    'squad_id' => $reserveSquad ? $reserveSquad->id : null,
+                    'status' => 'confirmed'
+                ]));
+            }
 
             \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
 
@@ -152,3 +194,4 @@ class EventSquadController extends Controller
         });
     }
 }
+

@@ -5,6 +5,7 @@ namespace App\Actions\Events\Core;
 use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\User;
+use App\Events\ParticipantUpdated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -16,7 +17,7 @@ class ToggleParticipationAction
             abort(403, 'Cannot change participation in an archived event');
         }
 
-        return DB::transaction(function () use ($event, $user, $action, $squadId) {
+        $result = DB::transaction(function () use ($event, $user, $action, $squadId) {
             $participant = EventParticipant::query()
                 ->where('event_id', $event->id)
                 ->where('user_id', $user->id)
@@ -29,18 +30,26 @@ class ToggleParticipationAction
                         'squad_id' => null
                     ]);
                 } else {
-                    EventParticipant::create([
+                    $participant = EventParticipant::create([
                         'event_id' => $event->id,
                         'user_id' => $user->id,
                         'status' => 'declined',
                         'squad_id' => null
                     ]);
                 }
-                \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+
+                broadcast(new ParticipantUpdated($event->id, 'status_changed', [
+                    'user_id' => $user->id,
+                    'squad_id' => null,
+                    'status' => 'declined'
+                ]));
+
                 return true;
             }
 
             // JOIN logic
+            $broadcastAction = $participant ? 'moved' : 'joined';
+
             if (!$squadId) {
                 // Если squad_id не передан, ищем системный Резерв
                 $reserve = $event->squads()->where('is_system', true)->first();
@@ -66,7 +75,7 @@ class ToggleParticipationAction
                     'squad_id' => $squadId
                 ]);
             } else {
-                EventParticipant::create([
+                $participant = EventParticipant::create([
                     'event_id' => $event->id,
                     'user_id' => $user->id,
                     'status' => 'confirmed',
@@ -74,9 +83,20 @@ class ToggleParticipationAction
                 ]);
             }
 
-            \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+            broadcast(new ParticipantUpdated($event->id, $broadcastAction, [
+                'user_id' => $user->id,
+                'squad_id' => $squadId,
+                'status' => 'confirmed'
+            ]));
 
             return true;
         });
+
+        if ($result) {
+            \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+        }
+
+        return $result;
     }
 }
+

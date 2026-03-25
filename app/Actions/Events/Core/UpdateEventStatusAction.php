@@ -4,6 +4,8 @@ namespace App\Actions\Events\Core;
 
 use App\Models\Event;
 use App\Models\EventParticipant;
+use App\Events\EventUpdated;
+use App\Events\ParticipantUpdated;
 use Illuminate\Support\Facades\DB;
 
 class UpdateEventStatusAction
@@ -20,14 +22,19 @@ class UpdateEventStatusAction
             
             $event->update($updateData);
 
+            broadcast(new EventUpdated($event->id, 'status_changed', [
+                'status' => $status
+            ]));
+
             // Если событие переходит в статус published из любого другого статуса (обычно из draft)
+
             if ($status === 'published' && $oldStatus !== 'published') {
                 $activeMemberUserIds = $event->guild->members()
                     ->where('status', 'active')
                     ->pluck('user_id');
 
                 foreach ($activeMemberUserIds as $userId) {
-                    EventParticipant::query()->firstOrCreate(
+                    $participant = EventParticipant::query()->firstOrCreate(
                         [
                             'event_id' => $event->id,
                             'user_id' => $userId,
@@ -36,6 +43,12 @@ class UpdateEventStatusAction
                             'status' => 'pending',
                         ]
                     );
+
+                    broadcast(new ParticipantUpdated($event->id, 'joined', [
+                        'user_id' => $userId,
+                        'squad_id' => $participant->squad_id,
+                        'status' => 'pending'
+                    ]));
                 }
             }
 

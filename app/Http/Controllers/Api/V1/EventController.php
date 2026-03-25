@@ -13,6 +13,8 @@ use App\Actions\Events\Discord\CreateDiscordEvent;
 use App\Actions\Events\Core\UpdateEventStatusAction;
 use App\Actions\Events\Core\UpdateEventMessageAction;
 use App\Http\Resources\Api\Discord\EventFullResource;
+use App\Events\EventUpdated;
+use App\Events\SquadUpdated;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
@@ -71,6 +73,8 @@ class EventController extends Controller
 
         $event->update($data);
 
+        broadcast(new EventUpdated($event->id, 'info_updated', $event->only(['name', 'description', 'start_at', 'total_slots'])));
+
         return $this->successResponse(new EventFullResource($event->load(['squads', 'guild'])), 'Event updated');
     }
 
@@ -91,24 +95,45 @@ class EventController extends Controller
         $preset = Preset::query()->findOrFail($request->preset_id);
 
         DB::transaction(function () use ($event, $preset) {
+            // we should probably broadcast that old squads are gone
+            foreach ($event->squads as $squad) {
+                 broadcast(new SquadUpdated($event->id, 'deleted', [
+                     'id' => $squad->id,
+                     'title' => $squad->title,
+                     'slots_limit' => $squad->slots_limit,
+                 ]));
+            }
+
             $event->squads()->delete();
 
             $totalSlots = 0;
             foreach ($preset->structure as $index => $squadTemplate) {
-                $event->squads()->create([
+                $newSquad = $event->squads()->create([
                     'title' => $squadTemplate['name'],
                     'slots_limit' => $squadTemplate['slots'],
                     'position' => $index,
                 ]);
                 $totalSlots += $squadTemplate['slots'];
+
+                broadcast(new SquadUpdated($event->id, 'created', [
+                    'id' => $newSquad->id,
+                    'title' => $newSquad->title,
+                    'slots_limit' => $newSquad->slots_limit,
+                ]));
             }
 
             $event->total_slots = $totalSlots;
             $event->save();
+
+            broadcast(new EventUpdated($event->id, 'info_updated', [
+                'total_slots' => $totalSlots
+            ]));
         });
 
         return $this->show($event->id);
     }
+
+
 
     public function publish(Request $request, $id, UpdateEventStatusAction $action)
     {

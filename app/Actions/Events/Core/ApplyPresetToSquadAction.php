@@ -5,6 +5,7 @@ namespace App\Actions\Events\Core;
 use App\Models\EventParticipant;
 use App\Models\EventSquad;
 use App\Models\Preset;
+use App\Events\ParticipantUpdated;
 use Illuminate\Support\Facades\DB;
 
 class ApplyPresetToSquadAction
@@ -28,6 +29,13 @@ class ApplyPresetToSquadAction
                         'squad_id' => $squad->id,
                         'status' => 'unknown', // Статус для тех, кто добавлен пресетом
                     ]);
+
+                    broadcast(new ParticipantUpdated($squad->event_id, 'joined', [
+                        'user_id' => $user->id,
+                        'squad_id' => $squad->id,
+                        'status' => 'unknown',
+                    ]));
+
                     $addedCount++;
                 }
             }
@@ -40,3 +48,4 @@ class ApplyPresetToSquadAction
         });
     }
 }
+
