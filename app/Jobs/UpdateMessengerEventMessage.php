@@ -116,7 +116,9 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
         $botJsUrl = env('BOTJS_URL', 'http://localhost:3000') . '/update-event';
 
         try {
-            Http::post($botJsUrl, [
+            Http::withHeaders([
+                'X-Backend-Token' => config('services.discord.backend_api_secret')
+            ])->post($botJsUrl, [
                 'guild_id' => $event->guild->platform_id ?? null,
                 'event_id' => $event->id,
                 'message_id' => $event->discord_message_id ?? null,
@@ -132,43 +134,52 @@ class UpdateMessengerEventMessage implements ShouldQueue, ShouldBeUnique
         $isFirstTime = empty($event->telegram_message_id);
 
         $name = htmlspecialchars($event->name);
-        $text = "<b>{$name}</b>\n";
-        $text .= "Time: " . $event->start_at->format('Y-m-d H:i') . "\n";
-        $text .= "Status: " . ucfirst($event->status) . "\n\n";
+        $text = "<b>#{$event->id}: {$name}</b>\n";
+        $text .= "⏰ <i>" . $event->start_at->format('Y-m-d H:i') . "</i>\n\n";
+
+        if (!empty($event->description)) {
+            $text .= "<b>📋 Описание</b>\n";
+            $text .= htmlspecialchars($event->description) . "\n\n";
+        }
 
         foreach ($event->squads as $squad) {
             $confirmedParticipants = $squad->participants->where('status', 'confirmed');
             $count = $confirmedParticipants->count();
-
-            $nicknames = $confirmedParticipants->map(function($p) {
-                $displayName = !empty($p->user->profile->family_name)
-                    ? $p->user->profile->family_name
-                    : ($p->user->profile->global_name ?? 'Player');
-                return htmlspecialchars($displayName);
-            })->implode(', ');
+            $limit = $squad->slots_limit;
 
             $squadTitle = htmlspecialchars($squad->title);
-            $text .= "🛡️ {$squadTitle} ({$count}/{$squad->slots_limit})";
-            if ($count > 0) {
-                $text .= ": {$nicknames}";
-            }
-            $text .= "\n";
-        }
+            $text .= "<b>🛡️ {$squadTitle} ({$count}/{$limit})</b>\n";
+            $text .= "<pre>\n";
 
-        $text .= "\nTotal Slots: {$event->total_slots}";
+            if ($count > 0) {
+                $participantLines = $confirmedParticipants->map(function($p) {
+                    $familyName = $p->user->profile->family_name ?? null;
+                    $globalName = $p->user->profile->global_name ?? null;
+                    $userName = $p->user->name ?? 'Player';
+
+                    if (!empty($familyName)) {
+                        $displayName = $familyName . (!empty($globalName) ? " ({$globalName})" : "");
+                    } elseif (!empty($globalName)) {
+                        $displayName = $globalName;
+                    } else {
+                        $displayName = $userName;
+                    }
+
+                    return htmlspecialchars($displayName);
+                })->implode("\n");
+                $text .= $participantLines;
+            } else {
+                $text .= "Никто";
+            }
+
+            $text .= "\n</pre>\n";
+        }
 
         // One-time ping logic
         if ($isFirstTime && !empty($event->notification_settings['roles'])) {
-            $text .= "\n\n";
+            $text .= "\n";
             $pings = [];
             foreach ($event->notification_settings['roles'] as $role) {
-                // In Telegram, there's no direct "role mention" by ID like in Discord for arbitrary bots usually,
-                // but we can assume these are some identifiers or we just list them if they are names.
-                // However, requirement says "Include role mentions".
-                // For Telegram, role mentions are usually just text or special tags if supported.
-                // If they are discord role IDs, they won't work in TG.
-                // If they are telegram group/topic identifiers, maybe.
-                // Given the context of a SaaS for BDO guilds, these might be internal role names or custom tags.
                 $pings[] = "@" . htmlspecialchars($role);
             }
             $text .= implode(' ', $pings);

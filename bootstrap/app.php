@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'onboarded' => \App\Http\Middleware\EnsureOnboarded::class,
             'active_member' => \App\Http\Middleware\EnsureActiveMember::class,
             'role' => \App\Http\Middleware\CheckRole::class,
+            'bot_proxy' => \App\Http\Middleware\BotProxyAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

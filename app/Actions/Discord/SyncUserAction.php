@@ -11,7 +11,7 @@ class SyncUserAction
     /**
      * Sync user data from Discord bot.
      * 
-     * @param array{discord_id: string, username: string, global_name: string, avatar: string} $data
+     * @param array{discord_id: string, username: string, global_name: string, avatar: string, discord_guild_id?: string} $data
      * @return User
      */
     public function execute(array $data): User
@@ -50,7 +50,29 @@ class SyncUserAction
                 ]
             );
 
-            return $user->load('profile');
+            // Авто-привязка к гильдии, если передан discord_guild_id
+            if (!empty($data['discord_guild_id'])) {
+                $integration = \App\Models\GuildIntegration::where('provider', 'discord')
+                    ->where('platform_id', $data['discord_guild_id'])
+                    ->first();
+
+                if ($integration) {
+                    $exists = $user->guildMemberships()
+                        ->where('guild_id', $integration->guild_id)
+                        ->exists();
+
+                    if (!$exists) {
+                        $user->guildMemberships()->create([
+                            'guild_id' => $integration->guild_id,
+                            'role' => \App\Enums\GuildRole::MEMBER,
+                            'status' => 'active',
+                            'joined_at' => now(),
+                        ]);
+                    }
+                }
+            }
+
+            return $user->load(['profile', 'guildMemberships']);
         });
     }
 }

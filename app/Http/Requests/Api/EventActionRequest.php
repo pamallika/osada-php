@@ -23,7 +23,7 @@ class EventActionRequest extends FormRequest
     {
         return [
             'event_id' => 'required|exists:events,id',
-            'discord_user_id' => 'required|string',
+            'discord_user_id' => 'nullable|string',
             'action' => 'required|in:confirm,decline,reserve,join_squad',
             'squad_id' => 'nullable|exists:event_squads,id',
         ];

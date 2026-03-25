@@ -16,11 +16,17 @@ class HandleDiscordParticipation
 
     public function execute(array $data)
     {
-        $linkedAccount = LinkedAccount::where('provider', 'discord')
-            ->where('provider_id', $data['discord_user_id'])
-            ->firstOrFail();
-
-        $user = $linkedAccount->user;
+        if (!empty($data['discord_user_id'])) {
+            $linkedAccount = LinkedAccount::where('provider', 'discord')
+                ->where('provider_id', $data['discord_user_id'])
+                ->firstOrFail();
+            $user = $linkedAccount->user;
+        } else {
+            $user = auth()->user();
+            if (!$user) {
+                abort(401, 'User not authenticated and no discord_user_id provided');
+            }
+        }
 
         // Если пришел squad_id, находим event_id через отряд, если он не передан явно
         $event = isset($data['event_id'])

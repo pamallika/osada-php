@@ -56,6 +56,8 @@ class EventSquadController extends Controller
         $event->total_slots = $event->squads()->sum('slots_limit');
         $event->save();
 
+        \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+
         return $this->successResponse(
             new EventFullResource($event->load(['squads.participants.user.profile', 'participants.user.profile', 'guild'])),
             'Squad created successfully'
@@ -101,6 +103,8 @@ class EventSquadController extends Controller
         $event->total_slots = $event->squads()->sum('slots_limit');
         $event->save();
 
+        \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+
         return $this->successResponse(
             new EventFullResource($event->load(['squads.participants.user.profile', 'participants.user.profile', 'guild'])),
             'Squad updated successfully'
@@ -138,6 +142,8 @@ class EventSquadController extends Controller
 
             $event->total_slots = $event->squads()->sum('slots_limit');
             $event->save();
+
+            \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
 
             return $this->successResponse(
                 new EventFullResource($event->load(['squads.participants.user.profile', 'participants.user.profile', 'guild'])),

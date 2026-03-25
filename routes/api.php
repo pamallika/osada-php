@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\V1\GuildController;
 
-Route::prefix('v1')->group(function () {
+Route::prefix('v1')->middleware('bot_proxy')->group(function () {
 
     Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
     Route::get('/status', GetSystemStatusAction::class);
