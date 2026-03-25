@@ -77,7 +77,10 @@ class LoginViaProviderAction
 
             $user->tokens()->where('name', 'web-client')->delete();
 
+            $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
+
             return $user->createToken('web-client')->plainTextToken;
+
         });
     }
 }

@@ -52,9 +52,10 @@ class AuthController extends Controller
     {
         $result = $action->execute($request->validated());
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'User registered successfully', 201);
     }
 
@@ -62,9 +63,10 @@ class AuthController extends Controller
     {
         $result = $action->execute($request->validated());
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'Logged in successfully');
     }
 
@@ -118,9 +120,10 @@ class AuthController extends Controller
             ], 200);
         }
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'Successfully authenticated via Telegram Deep Link');
     }
 
@@ -130,9 +133,11 @@ class AuthController extends Controller
     ): JsonResponse {
         $result = $widgetAction->execute($request->all());
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
+
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'Successfully authenticated via Telegram Widget');
     }
 
@@ -146,9 +151,10 @@ class AuthController extends Controller
             return $this->errorResponse('Not Found', 404);
         }
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'Successfully verified via TMA');
     }
 
@@ -158,9 +164,10 @@ class AuthController extends Controller
 
         $result = $action->execute($request->input('initData'));
 
+        $user = $result['user']->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
         return $this->successResponse([
             'token' => $result['token'],
-            'user' => new UserResource($result['user']),
+            'user' => new UserResource($user),
         ], 'Successfully registered via TMA', 201);
     }
 
@@ -183,7 +190,7 @@ class AuthController extends Controller
     public function updateProfile(UpdateProfileRequest $request, UpdateUserProfileAction $action): JsonResponse
     {
         $user = $action->execute($request->user(), $request->validated());
-        $user->load(['profile', 'linked_accounts']);
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return $this->successResponse(new UserResource($user), 'Profile updated successfully');
     }
@@ -191,7 +198,7 @@ class AuthController extends Controller
     public function updateAccount(UpdateAccountRequest $request, UpdateUserAccountAction $action): JsonResponse
     {
         $user = $action->execute($request->user(), $request->validated());
-        $user->load(['profile', 'linked_accounts']);
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return $this->successResponse(new UserResource($user), 'Account updated successfully');
     }
@@ -199,7 +206,7 @@ class AuthController extends Controller
     public function unlinkAccount(string $provider, Request $request, UnlinkAccountAction $action): JsonResponse
     {
         $user = $action->execute($request->user(), $provider);
-        $user->load(['profile', 'linked_accounts']);
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return $this->successResponse(new UserResource($user), 'Account unlinked successfully');
     }

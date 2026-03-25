@@ -21,7 +21,8 @@ class UserResource extends JsonResource
             'has_password' => !empty($this->password),
             'profile' => new UserProfileResource($this->whenLoaded('profile')),
             'linked_accounts' => LinkedAccountResource::collection($this->whenLoaded('linked_accounts')),
-            'guild_memberships' => $this->whenLoaded('guildMemberships'), // Assuming it's already structured or needs another resource
+            'guild_memberships' => GuildMemberResource::collection($this->whenLoaded('guildMemberships')),
+
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];
