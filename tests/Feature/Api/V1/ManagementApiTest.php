@@ -35,7 +35,7 @@ class ManagementApiTest extends TestCase
         ]);
     }
 
-    public function test_admin_cannot_kick_another_admin()
+    public function test_admin_can_kick_another_admin()
     {
         $admin1 = User::factory()->create();
         $admin1->profile()->create(['family_name' => 'Admin1']);
@@ -51,7 +51,7 @@ class ManagementApiTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->deleteJson("/api/v1/guilds/my/members/{$admin2->id}");
 
-        $response->assertStatus(422);
+        $response->assertStatus(204);
     }
 
     public function test_admin_cannot_kick_creator()
@@ -69,8 +69,9 @@ class ManagementApiTest extends TestCase
         $response = $this->withHeader('Authorization', 'Bearer ' . $token)
             ->deleteJson("/api/v1/guilds/my/members/{$creator->id}");
 
-        $response->assertStatus(422);
+        $response->assertStatus(403);
     }
+
 
     public function test_creator_can_kick_admin()
     {
@@ -130,4 +131,79 @@ class ManagementApiTest extends TestCase
         $response->assertStatus(403)
             ->assertJson(['error' => 'INSUFFICIENT_PERMISSIONS']);
     }
+
+    public function test_admin_cannot_assign_admin_role()
+
+    {
+        $admin = User::factory()->create();
+        $admin->profile()->create(['family_name' => 'Admin']);
+        $guild = Guild::factory()->create();
+        $guild->members()->create(['user_id' => $admin->id, 'role' => 'admin', 'status' => 'active']);
+
+        $target = User::factory()->create();
+        $target->profile()->create(['family_name' => 'ToUpdate']);
+        $guild->members()->create(['user_id' => $target->id, 'role' => 'member', 'status' => 'active']);
+
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/v1/guilds/my/members/{$target->id}/role", [
+                'role' => 'admin'
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_admin_can_assign_officer_role()
+    {
+        $admin = User::factory()->create();
+        $admin->profile()->create(['family_name' => 'Admin']);
+        $guild = Guild::factory()->create();
+        $guild->members()->create(['user_id' => $admin->id, 'role' => 'admin', 'status' => 'active']);
+
+        $target = User::factory()->create();
+        $target->profile()->create(['family_name' => 'ToUpdate']);
+        $guild->members()->create(['user_id' => $target->id, 'role' => 'member', 'status' => 'active']);
+
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/v1/guilds/my/members/{$target->id}/role", [
+                'role' => 'officer'
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('guild_members', [
+            'guild_id' => $guild->id,
+            'user_id' => $target->id,
+            'role' => 'officer'
+        ]);
+    }
+
+    public function test_admin_can_downgrade_another_admin()
+    {
+        $admin = User::factory()->create();
+        $admin->profile()->create(['family_name' => 'Admin']);
+        $guild = Guild::factory()->create();
+        $guild->members()->create(['user_id' => $admin->id, 'role' => 'admin', 'status' => 'active']);
+
+        $target = User::factory()->create();
+        $target->profile()->create(['family_name' => 'TargetAdmin']);
+        $guild->members()->create(['user_id' => $target->id, 'role' => 'admin', 'status' => 'active']);
+
+        $token = $admin->createToken('test')->plainTextToken;
+
+        $response = $this->withHeader('Authorization', 'Bearer ' . $token)
+            ->patchJson("/api/v1/guilds/my/members/{$target->id}/role", [
+                'role' => 'member'
+            ]);
+
+        $response->assertStatus(200);
+        $this->assertDatabaseHas('guild_members', [
+            'guild_id' => $guild->id,
+            'user_id' => $target->id,
+            'role' => 'member'
+        ]);
+    }
 }
+

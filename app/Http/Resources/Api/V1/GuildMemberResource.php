@@ -15,10 +15,12 @@ class GuildMemberResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
+            'id' => $this->id,
             'guild' => new GuildResource($this->whenLoaded('guild')),
+            'user' => new UserResource($this->whenLoaded('user')),
             'role' => $this->role,
             'status' => $this->status,
-            'joined_at' => $this->joined_at,
+            'joined_at' => $this->created_at, 
         ];
     }
 }

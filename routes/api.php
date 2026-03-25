@@ -100,13 +100,10 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
                 Route::get('/guilds/my/applications', [GuildApplicationController::class, 'index']);
                 Route::post('/guilds/my/applications/{user_id}/approve', [GuildApplicationController::class, 'approve']);
                 Route::post('/guilds/my/applications/{user_id}/reject', [GuildApplicationController::class, 'reject']);
+                Route::patch('/guilds/my/members/{user_id}/role', [GuildMemberController::class, 'updateRole']);
                 Route::delete('/guilds/my/members/{user_id}', [GuildMemberController::class, 'destroy']);
             });
 
-            // Creator permissions
-            Route::middleware('role:creator')->group(function () {
-                Route::patch('/guilds/my/members/{user_id}/role', [GuildMemberController::class, 'updateRole']);
-            });
         });
     });
 

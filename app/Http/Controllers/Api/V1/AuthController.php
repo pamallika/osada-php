@@ -176,8 +176,10 @@ class AuthController extends Controller
         $request->validate(['initData' => 'required|string']);
 
         $user = $action->execute($request->user(), $request->input('initData'));
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return $this->successResponse(new UserResource($user), 'Successfully linked Telegram account');
+
     }
 
     public function me(Request $request, GetAuthenticatedUserAction $action): JsonResponse
