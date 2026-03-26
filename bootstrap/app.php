@@ -13,8 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->statefulApi();
+
         $middleware->alias([
             'onboarded' => \App\Http\Middleware\EnsureOnboarded::class,
+
             'active_member' => \App\Http\Middleware\EnsureActiveMember::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'bot_proxy' => \App\Http\Middleware\BotProxyAuth::class,

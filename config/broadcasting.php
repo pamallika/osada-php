@@ -44,6 +44,7 @@ return [
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
             ],
+            'guard' => 'sanctum',
         ],
 
         'pusher' => [
@@ -62,7 +63,9 @@ return [
             'client_options' => [
                 // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
             ],
+            'guard' => 'sanctum',
         ],
+
 
         'ably' => [
             'driver' => 'ably',

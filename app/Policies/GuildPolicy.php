@@ -124,10 +124,9 @@ class GuildPolicy
                 \Illuminate\Support\Facades\Log::warning("Admin [{$user->id}] attempted to assign Admin role - DENIED");
                 return false;
              }
-            return in_array($newRole, ['officer', 'member', 'admin']); // Wait, the task says "can only assign officer or member" but "Downgrade other admins" is allowed.
-            // Wait, "Downgrade other admins" means target user role was admin, but newRole is officer/member.
-            // So if newRole is admin, it's always DENIED for admin actor.
+            return in_array($newRole, ['officer', 'member']);
         }
+
 
         return false;
     }
