@@ -31,9 +31,10 @@ Broadcast::channel('guild.{id}', function ($user, $id) {
         ->where('status', 'active')
         ->first();
 
-    if (!$membership) {
+    if (!$membership || !in_array($membership->role, ['officer', 'admin', 'creator'])) {
         return false;
     }
+
 
     return [
         'id' => $user->id,

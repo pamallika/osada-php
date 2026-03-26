@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\UserResource;
 use App\Traits\ApiResponser;
 use App\Models\Guild;
 use App\Actions\Telegram\GenerateTelegramBindingLink;
+use App\Events\GuildApplicationCreated;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -41,12 +42,20 @@ class GuildController extends Controller
         ]);
     }
 
+
     public function apply(string $slug, Request $request, ApplyToGuildAction $action): JsonResponse
     {
-        $action->execute($request->user(), strtolower($slug));
+        $slug = strtolower($slug);
+        $guild = Guild::where('invite_slug', $slug)->firstOrFail();
+        
+        $action->execute($request->user(), $slug);
+
+        $pendingCount = $guild->members()->where('status', 'pending')->count();
+        broadcast(new GuildApplicationCreated($guild->id, $pendingCount));
 
         return $this->successResponse(null, 'Application submitted successfully');
     }
+
 
     public function cancelApplication(Request $request): JsonResponse
     {

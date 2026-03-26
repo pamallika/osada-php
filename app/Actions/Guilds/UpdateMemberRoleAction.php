@@ -3,10 +3,7 @@
 namespace App\Actions\Guilds;
 
 use App\Models\Guild;
-use App\Models\GuildMember;
-use App\Models\User; // Added this line
-use App\Enums\GuildRole;
-use Illuminate\Validation\ValidationException;
+use App\Models\User;
 
 class UpdateMemberRoleAction
 {
@@ -17,7 +14,5 @@ class UpdateMemberRoleAction
         $member->update([
             'role' => $newRole
         ]);
-
-        $targetUser->tokens()->delete();
     }
 }

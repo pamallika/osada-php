@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api\V1;
 use App\Actions\Guilds\ApproveApplicationAction;
 use App\Actions\Guilds\RejectApplicationAction;
 use App\Http\Controllers\Controller;
+use App\Events\GuildApplicationProcessed;
 use Illuminate\Http\JsonResponse;
+
 use Illuminate\Http\Request;
 
 class GuildApplicationController extends Controller
@@ -40,6 +42,12 @@ class GuildApplicationController extends Controller
 
         $action->execute($guild, $userId);
 
+        broadcast(new GuildApplicationProcessed($userId, 'approved', [
+            'id' => $guild->id,
+            'name' => $guild->name,
+            'logo_url' => $guild->logo_url,
+        ]));
+
         return response()->json(['message' => 'Application approved']);
     }
 
@@ -50,6 +58,12 @@ class GuildApplicationController extends Controller
         $guild = $membership->guild;
 
         $action->execute($guild, $userId);
+
+        broadcast(new GuildApplicationProcessed($userId, 'rejected', [
+            'id' => $guild->id,
+            'name' => $guild->name,
+            'logo_url' => $guild->logo_url,
+        ]));
 
         return response()->json(['message' => 'Application rejected']);
     }

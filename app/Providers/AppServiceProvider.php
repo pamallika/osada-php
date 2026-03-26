@@ -6,7 +6,6 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Discord\DiscordExtendSocialite;
 use SocialiteProviders\Manager\SocialiteWasCalled;
-use Illuminate\Support\Facades\Broadcast;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -23,10 +22,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        Broadcast::routes(['middleware' => ['auth:sanctum']]);
-
         Event::listen(function (SocialiteWasCalled $event) {
-
             $event->extendSocialite('discord', \SocialiteProviders\Discord\Provider::class);
         });
     }
