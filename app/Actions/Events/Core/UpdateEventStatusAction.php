@@ -6,7 +6,9 @@ use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Events\EventUpdated;
 use App\Events\ParticipantUpdated;
+use App\Events\GlobalNotification;
 use Illuminate\Support\Facades\DB;
+
 
 class UpdateEventStatusAction
 {
@@ -57,7 +59,12 @@ class UpdateEventStatusAction
                 \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
             }
 
+            if ($status === 'in_progress' && $oldStatus !== 'in_progress') {
+                broadcast(new GlobalNotification($event->guild_id, 'info', "Осада {$event->name} началась!", "/events/{$event->id}"));
+            }
+
             return $event;
+
         });
     }
 }

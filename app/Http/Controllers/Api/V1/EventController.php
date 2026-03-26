@@ -15,6 +15,8 @@ use App\Actions\Events\Core\UpdateEventMessageAction;
 use App\Http\Resources\Api\Discord\EventFullResource;
 use App\Events\EventUpdated;
 use App\Events\SquadUpdated;
+use App\Events\GlobalNotification;
+
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
 
@@ -57,7 +59,11 @@ class EventController extends Controller
         $this->authorize('manageEvents', $guild);
 
         $event = $action->execute($request->validated());
+        
+        broadcast(new GlobalNotification($guild->id, 'info', "Создано новое событие {$event->name}", "/events/{$event->id}"));
+
         return $this->successResponse(new EventFullResource($event->load(['squads', 'guild'])), 'Event created');
+
     }
 
     public function update($id, EventUpdateRequest $request)
