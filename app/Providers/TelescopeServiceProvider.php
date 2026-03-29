@@ -20,13 +20,31 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         $isLocal = $this->app->environment('local');
 
+        Telescope::tag(function (IncomingEntry $entry) {
+            if ($entry->type === 'request') {
+                $status = $entry->content['response_status'] ?? null;
+
+                if ($status >= 400 && $status < 500) {
+                    return ['client-error', 'status:' . $status];
+                }
+            }
+
+            return [];
+        });
+
         Telescope::filter(function (IncomingEntry $entry) use ($isLocal) {
+            if ($entry->type === 'request' && 
+                ($entry->content['method'] ?? null) === 'OPTIONS' && 
+                ($entry->content['response_status'] ?? null) === 204) {
+                return false;
+            }
+
             return $isLocal ||
-                   $entry->isReportableException() ||
-                   $entry->isFailedRequest() ||
-                   $entry->isFailedJob() ||
-                   $entry->isScheduledTask() ||
-                   $entry->hasMonitoredTag();
+                $entry->isReportableException() ||
+                $entry->isFailedRequest() ||
+                $entry->isFailedJob() ||
+                $entry->isScheduledTask() ||
+                $entry->hasMonitoredTag();
         });
     }
 
