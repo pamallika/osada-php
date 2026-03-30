@@ -20,6 +20,9 @@ class UpdateProfileRequest extends FormRequest
             'attack' => 'nullable|integer|min:0|max:1000',
             'awakening_attack' => 'nullable|integer|min:0|max:1000',
             'defense' => 'nullable|integer|min:0|max:1000',
+            'draft_attack' => 'nullable|integer|min:0|max:1000',
+            'draft_awakening_attack' => 'nullable|integer|min:0|max:1000',
+            'draft_defense' => 'nullable|integer|min:0|max:1000',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Actions\Events\Core;
 
+use App\Actions\Dashboard\GetDashboardAnalyticsAction;
 use App\Models\Event;
 use App\Models\EventParticipant;
 use App\Models\User;

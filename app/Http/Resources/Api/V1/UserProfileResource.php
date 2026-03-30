@@ -24,6 +24,9 @@ class UserProfileResource extends JsonResource
             'attack' => $this->attack,
             'awakening_attack' => $this->awakening_attack,
             'defense' => $this->defense,
+            'draft_attack' => $this->draft_attack,
+            'draft_awakening_attack' => $this->draft_awakening_attack,
+            'draft_defense' => $this->draft_defense,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

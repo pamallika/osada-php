@@ -46,4 +46,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(GuildMember::class);
     }
+
+    public function gearMedia(): HasMany
+    {
+        return $this->hasMany(UserGearMedia::class);
+    }
 }

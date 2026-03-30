@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\V1\GuildMemberController;
 use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TelegramWebhookController;
 use App\Http\Controllers\Api\V1\GuildIntegrationController;
+use App\Http\Controllers\Api\V1\GearController;
+use App\Http\Controllers\Api\V1\GuildVerificationController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -57,6 +59,11 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::patch('/account', [AuthController::class, 'updateAccount']);
             Route::delete('/linked-accounts/{provider}', [AuthController::class, 'unlinkAccount']);
             Route::post('/logout', [AuthController::class, 'logout']);
+
+            // Gear
+            Route::get('/gear', [GearController::class, 'index']);
+            Route::post('/gear/media', [GearController::class, 'storeMedia']);
+            Route::delete('/gear/media/{id}', [GearController::class, 'destroyMedia']);
         });
     });
 
@@ -73,6 +80,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::get('/guilds/my/members', [GuildMemberController::class, 'index']);
             Route::get('/guilds/my/invite', [GuildInviteController::class, 'myInvite']);
             Route::get('/guilds/my/telegram-bind-token', [V1GuildController::class, 'telegramBindToken']);
+            Route::post('/guilds/my/verification/submit', [GuildVerificationController::class, 'submit']);
 
             // User Profile
             Route::get('/users/{id}/profile', [UserController::class, 'show']);
@@ -99,6 +107,12 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
                 Route::post('/events/{id}/squads', [EventSquadController::class, 'store']);
                 Route::patch('/events/{eventId}/squads/{squadId}', [EventSquadController::class, 'update']);
                 Route::delete('/events/{eventId}/squads/{squadId}', [EventSquadController::class, 'destroy']);
+
+                // Verifications
+                Route::get('/guilds/my/verifications', [GuildVerificationController::class, 'index']);
+                Route::get('/guilds/my/verifications/{userId}', [GuildVerificationController::class, 'show']);
+                Route::post('/guilds/my/verifications/{userId}/approve', [GuildVerificationController::class, 'approve']);
+                Route::post('/guilds/my/verifications/{userId}/reject', [GuildVerificationController::class, 'reject']);
             });
 
             // Admin permissions

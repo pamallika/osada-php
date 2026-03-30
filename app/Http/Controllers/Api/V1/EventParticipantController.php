@@ -39,7 +39,7 @@ class EventParticipantController extends Controller
     {
         $event = \App\Models\Event::query()->findOrFail($id);
         $this->authorize('update', $event);
-        
+
         $user = \App\Models\User::query()->findOrFail($userId);
 
         $action->execute($event, $user, 'join_squad', $request->squad_id);

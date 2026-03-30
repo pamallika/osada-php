@@ -11,7 +11,21 @@ class GuildMember extends Model
 {
     use SoftDeletes;
 
-    protected $fillable = ['guild_id', 'user_id', 'role', 'joined_at', 'status'];
+    protected $fillable = [
+        'guild_id', 
+        'user_id', 
+        'role', 
+        'joined_at', 
+        'status',
+        'verification_status',
+        'verified_by',
+        'verified_at'
+    ];
+
+    protected $casts = [
+        'verified_at' => 'datetime',
+        'joined_at' => 'datetime',
+    ];
 
     // Roles: creator, admin, officer, member
 
@@ -23,5 +37,10 @@ class GuildMember extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function verifier(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'verified_by');
     }
 }

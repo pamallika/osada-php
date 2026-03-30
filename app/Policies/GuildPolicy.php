@@ -130,6 +130,15 @@ class GuildPolicy
 
         return false;
     }
+
+    public function manageVerifications(User $user, Guild $guild): bool
+    {
+        return $user->guildMemberships()
+            ->where('guild_id', $guild->id)
+            ->whereIn('role', ['officer', 'admin', 'creator', 'leader'])
+            ->where('status', 'active')
+            ->exists();
+    }
 }
 
 
