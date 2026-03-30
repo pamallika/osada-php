@@ -94,6 +94,7 @@ class ToggleParticipationAction
 
         if ($result) {
             \App\Jobs\UpdateMessengerEventMessage::dispatch($event->id)->delay(now()->addSeconds(5));
+            GetDashboardAnalyticsAction::invalidate($event->guild_id);
         }
 
         return $result;

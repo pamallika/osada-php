@@ -12,8 +12,10 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\GuildInviteController;
 use App\Http\Controllers\Api\V1\GuildApplicationController;
 use App\Http\Controllers\Api\V1\GuildMemberController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\TelegramWebhookController;
 use App\Http\Controllers\Api\V1\GuildIntegrationController;
+
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\V1\GuildController;
@@ -63,6 +65,9 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
         Route::post('/invites/{token}/accept', [GuildInviteController::class, 'accept']);
 
         Route::middleware('active_member')->group(function () {
+            // Dashboard
+            Route::get('/dashboard/member', [DashboardController::class, 'memberView']);
+
             // Member permissions (implicitly by active_member)
             Route::get('/invites/{token}', [GuildInviteController::class, 'show']);
             Route::get('/guilds/my/members', [GuildMemberController::class, 'index']);
@@ -80,6 +85,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
 
             // Officer permissions
             Route::middleware('role:officer')->group(function () {
+                Route::get('/dashboard/analytics', [DashboardController::class, 'analytics']);
                 Route::get('/guilds/my/integrations', [GuildIntegrationController::class, 'index']);
                 Route::patch('/guilds/my/integrations/{provider}', [GuildIntegrationController::class, 'update']);
                 Route::delete('/guilds/my/integrations/{provider}', [GuildIntegrationController::class, 'destroy']);
