@@ -34,7 +34,10 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::post('/apply/{slug}', [GuildController::class, 'apply']);
             Route::delete('/my/application', [GuildController::class, 'cancelApplication']);
             Route::post('/my/leave', [GuildController::class, 'leave']);
-            Route::patch('/my/invite-slug', [GuildController::class, 'updateInviteSlug']);
+            
+            Route::middleware('role:creator')->group(function () {
+                Route::patch('/my/invite-slug', [GuildController::class, 'updateInviteSlug']);
+            });
         });
     });
 
