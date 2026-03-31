@@ -17,7 +17,7 @@ class UserGearMediaResource extends JsonResource
         return [
             'id' => $this->id,
             'user_id' => $this->user_id,
-            'url' => $this->url,
+            'url' => $this->url ? asset($this->url) : null,
             'label' => $this->label,
             'is_draft' => $this->is_draft,
             'size' => $this->size,

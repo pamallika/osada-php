@@ -15,6 +15,7 @@ class GuildInviteSlugTest extends TestCase
 
     protected $creator;
     protected $admin;
+    protected $officer;
     protected $member;
     protected $guild;
 
@@ -42,6 +43,16 @@ class GuildInviteSlugTest extends TestCase
             'guild_id' => $this->guild->id,
             'user_id' => $this->admin->id,
             'role' => 'admin',
+            'status' => 'active',
+        ]);
+
+        // Create Officer
+        $this->officer = User::factory()->create();
+        UserProfile::factory()->create(['user_id' => $this->officer->id, 'family_name' => 'OfficerFamily']);
+        GuildMember::create([
+            'guild_id' => $this->guild->id,
+            'user_id' => $this->officer->id,
+            'role' => 'officer',
             'status' => 'active',
         ]);
 
@@ -88,6 +99,16 @@ class GuildInviteSlugTest extends TestCase
         $response = $this->actingAs($this->admin)
             ->patchJson('/api/v1/guilds/my/invite-slug', [
                 'invite_slug' => 'admin-slug',
+            ]);
+
+        $response->assertStatus(403);
+    }
+
+    public function test_officer_cannot_update_invite_slug()
+    {
+        $response = $this->actingAs($this->officer)
+            ->patchJson('/api/v1/guilds/my/invite-slug', [
+                'invite_slug' => 'officer-slug',
             ]);
 
         $response->assertStatus(403);

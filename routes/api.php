@@ -34,6 +34,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::post('/apply/{slug}', [GuildController::class, 'apply']);
             Route::delete('/my/application', [GuildController::class, 'cancelApplication']);
             Route::post('/my/leave', [GuildController::class, 'leave']);
+            Route::post('/my/logo', [GuildController::class, 'logo']);
             
             Route::middleware('role:creator')->group(function () {
                 Route::patch('/my/invite-slug', [GuildController::class, 'updateInviteSlug']);
@@ -61,6 +62,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::patch('/profile', [AuthController::class, 'updateProfile']);
             Route::patch('/account', [AuthController::class, 'updateAccount']);
             Route::delete('/linked-accounts/{provider}', [AuthController::class, 'unlinkAccount']);
+            Route::post('/avatar', [AuthController::class, 'avatar']);
             Route::post('/logout', [AuthController::class, 'logout']);
 
             // Gear

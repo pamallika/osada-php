@@ -12,47 +12,48 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 
+use App\Actions\Auth\UpdateUserGearMediaAction;
+use App\Http\Requests\Api\V1\Auth\UpdateGearMediaRequest;
+
 class GearController extends Controller
 {
     use ApiResponser;
 
+    /**
+     * Get the current user's profile and filtered gear media.
+     */
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->load(['profile', 'gearMedia']);
+        
+        $mandatoryLabels = ['crystal', 'relic', 'zakalk', 'gear'];
+        
+        $media = $user->gearMedia()
+            ->whereIn('label', $mandatoryLabels)
+            ->get();
 
         return $this->successResponse([
             'profile' => new UserProfileResource($user->profile),
-            'media' => UserGearMediaResource::collection($user->gearMedia),
+            'media' => UserGearMediaResource::collection($media),
         ]);
     }
 
-    public function storeMedia(Request $request): JsonResponse
+    /**
+     * Upload a gear screenshot.
+     */
+    public function storeMedia(UpdateGearMediaRequest $request, UpdateUserGearMediaAction $action): JsonResponse
     {
-        $request->validate([
-            'file' => 'required|image|max:5120', // 5MB
-            'label' => 'nullable|string|max:255',
-        ]);
+        $media = $action->execute(
+            $request->user(), 
+            $request->file('file'), 
+            $request->input('label')
+        );
 
-        $user = $request->user();
-        $file = $request->file('file');
-
-        // Process image to webp
-        $img = Image::read($file->getRealPath());
-        $encoded = $img->toWebp(80);
-        
-        $fileName = 'gear/' . $user->id . '/' . uniqid() . '.webp';
-        Storage::disk('public')->put($fileName, $encoded);
-
-        $media = UserGearMedia::create([
-            'user_id' => $user->id,
-            'url' => Storage::url($fileName),
-            'label' => $request->input('label'),
-            'is_draft' => true,
-            'size' => strlen($encoded),
-        ]);
-
-        return $this->successResponse(new UserGearMediaResource($media), 'Media uploaded as draft', 201);
+        return $this->successResponse(
+            new UserGearMediaResource($media), 
+            'Media uploaded successfully', 
+            201
+        );
     }
 
     public function destroyMedia(int $id, Request $request): JsonResponse
@@ -64,6 +65,19 @@ class GearController extends Controller
         Storage::disk('public')->delete($path);
         
         $media->delete();
+
+        // Reset verification status
+        $membership = $request->user()->guildMemberships()
+            ->where('status', 'active')
+            ->first();
+
+        if ($membership) {
+            $membership->update([
+                'verification_status' => 'incomplete',
+                'verified_at' => null,
+                'verified_by' => null,
+            ]);
+        }
 
         return $this->successResponse(null, 'Media deleted');
     }

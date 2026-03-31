@@ -30,6 +30,8 @@ use App\Actions\Auth\TelegramTmaRegisterAction;
 use App\Actions\Auth\TelegramTmaLinkAction;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\User;
+use App\Actions\Auth\UpdateUserAvatarAction;
+use App\Http\Requests\Api\V1\Auth\UpdateAvatarRequest;
 use Illuminate\Support\Facades\Cache;
 
 class AuthController extends Controller
@@ -211,6 +213,14 @@ class AuthController extends Controller
         $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
 
         return $this->successResponse(new UserResource($user), 'Account unlinked successfully');
+    }
+
+    public function avatar(UpdateAvatarRequest $request, UpdateUserAvatarAction $action): JsonResponse
+    {
+        $user = $action->execute($request->user(), $request->file('avatar'));
+        $user->load(['profile', 'linked_accounts', 'guildMemberships.guild']);
+
+        return $this->successResponse(new UserResource($user), 'Avatar uploaded successfully');
     }
 
     public function logout(Request $request): JsonResponse

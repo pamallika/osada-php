@@ -26,9 +26,6 @@ class UpdateUserProfileAction
             'awakening_attack' => $awkAttack,
             'defense' => $defense,
             'gear_score' => $gearScore,
-            'draft_attack' => $data['draft_attack'] ?? null,
-            'draft_awakening_attack' => $data['draft_awakening_attack'] ?? null,
-            'draft_defense' => $data['draft_defense'] ?? null,
         ];
 
         if (isset($data['global_name'])) {

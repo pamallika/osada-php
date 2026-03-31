@@ -17,7 +17,7 @@ class GuildResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'logo_url' => $this->logo_url,
+            'logo_url' => $this->logo_url ? asset($this->logo_url) : null,
             'invite_slug' => $this->invite_slug,
             'status' => $this->status,
             'members_count' => $this->members()->where('status', 'active')->count(),

@@ -11,6 +11,8 @@ use App\Http\Resources\Api\V1\GuildResource;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Traits\ApiResponser;
 use App\Models\Guild;
+use App\Actions\Guilds\UploadGuildLogoAction;
+use App\Http\Requests\Api\V1\Guild\UpdateGuildLogoRequest;
 use App\Actions\Telegram\GenerateTelegramBindingLink;
 use App\Events\GuildApplicationCreated;
 use Illuminate\Http\JsonResponse;
@@ -37,7 +39,7 @@ class GuildController extends Controller
         return $this->successResponse([
             'id' => $guild->id,
             'name' => $guild->name,
-            'logo_url' => $guild->logo_url,
+            'logo_url' => $guild->logo_url ? asset($guild->logo_url) : null,
             'members_count' => $guild->members()->where('status', 'active')->count(),
         ]);
     }
@@ -112,6 +114,26 @@ class GuildController extends Controller
         $token = $action->execute(null, $membership->guild_id);
         
         return $this->successResponse(['token' => $token]);
+    }
+
+    public function logo(UpdateGuildLogoRequest $request, UploadGuildLogoAction $action): JsonResponse
+    {
+        $user = $request->user();
+        
+        // Find active membership in current guild or the one the user wants to update
+        // Usually, in 'v1/guilds/my/logo' it assumes the active context.
+        $membership = $user->guildMemberships()
+            ->where('status', 'active')
+            ->whereIn('role', ['creator', 'admin'])
+            ->first();
+
+        if (!$membership) {
+            return $this->errorResponse('Unauthorized. Only administrators can update the guild logo.', 403);
+        }
+
+        $guild = $action->execute($membership->guild, $request->file('logo'));
+
+        return $this->successResponse(new GuildResource($guild), 'Logo updated successfully');
     }
 
     public function store(StoreGuildRequest $request, CreateGuildAction $action)

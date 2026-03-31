@@ -14,24 +14,17 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use App\Actions\Guilds\SubmitVerificationAction;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class GuildVerificationController extends Controller
 {
     use ApiResponser;
 
-    public function submit(Request $request): JsonResponse
+    public function submit(Request $request, SubmitVerificationAction $action): JsonResponse
     {
-        $user = $request->user();
-        $membership = GuildMember::where('user_id', $user->id)
-            ->where('status', 'active')
-            ->firstOrFail();
-
-        $newStatus = ($membership->verification_status === 'verified') ? 'updated' : 'pending';
-        
-        $membership->update([
-            'verification_status' => $newStatus,
-        ]);
+        $membership = $action->execute($request->user());
 
         return $this->successResponse(new GuildMemberResource($membership), 'Verification request submitted');
     }
@@ -46,7 +39,7 @@ class GuildVerificationController extends Controller
         Gate::authorize('manageVerifications', $membership->guild);
 
         $members = GuildMember::where('guild_id', $membership->guild_id)
-            ->with(['user.profile', 'verifier.profile'])
+            ->with(['user', 'user.profile', 'user.linked_accounts', 'verifier.profile'])
             ->get();
 
         return $this->successResponse(GuildMemberResource::collection($members));
@@ -63,7 +56,7 @@ class GuildVerificationController extends Controller
 
         $targetMembership = GuildMember::where('guild_id', $membership->guild_id)
             ->where('user_id', $userId)
-            ->with(['user.profile', 'verifier.profile'])
+            ->with(['user', 'user.profile', 'user.linked_accounts', 'verifier.profile'])
             ->firstOrFail();
 
         $targetUser = $targetMembership->user;
@@ -89,22 +82,32 @@ class GuildVerificationController extends Controller
             ->where('user_id', $userId)
             ->firstOrFail();
 
+        // Check if all 4 mandatory labels are present
+        $mandatoryLabels = ['crystal', 'relic', 'zakalk', 'gear'];
+        $existingLabels = $targetMembership->user->gearMedia()
+            ->whereIn('label', $mandatoryLabels)
+            ->pluck('label')
+            ->unique()
+            ->toArray();
+
+        if (count(array_intersect($mandatoryLabels, $existingLabels)) < 4) {
+             throw ValidationException::withMessages(['gear' => 'Профиль не заполнен']);
+        }
+
         DB::transaction(function () use ($targetMembership, $user) {
             $profile = $targetMembership->user->profile;
 
-            // Apply draft to main stats
-            $profile->update([
-                'attack' => $profile->draft_attack ?? $profile->attack,
-                'awakening_attack' => $profile->draft_awakening_attack ?? $profile->awakening_attack,
-                'defense' => $profile->draft_defense ?? $profile->defense,
-                'draft_attack' => null,
-                'draft_awakening_attack' => null,
-                'draft_defense' => null,
-            ]);
+            // Handle Media: Identify labels being updated by drafts
+            $drafts = UserGearMedia::where('user_id', $targetMembership->user_id)
+                ->where('is_draft', true)
+                ->get();
 
-            // Handle Media
+            $draftLabels = $drafts->pluck('label')->toArray();
+
+            // 1. Delete OLD verified media that is being REPLACED by these drafts
             $oldMedia = UserGearMedia::where('user_id', $targetMembership->user_id)
                 ->where('is_draft', false)
+                ->whereIn('label', $draftLabels)
                 ->get();
 
             foreach ($oldMedia as $media) {
@@ -113,6 +116,7 @@ class GuildVerificationController extends Controller
                 $media->delete();
             }
 
+            // 2. Promote drafts to verified status
             UserGearMedia::where('user_id', $targetMembership->user_id)
                 ->where('is_draft', true)
                 ->update(['is_draft' => false]);
@@ -143,30 +147,18 @@ class GuildVerificationController extends Controller
         DB::transaction(function () use ($targetMembership) {
             $profile = $targetMembership->user->profile;
 
-            // Update main stats anyway, but status becomes incomplete
-            $profile->update([
-                'attack' => $profile->draft_attack ?? $profile->attack,
-                'awakening_attack' => $profile->draft_awakening_attack ?? $profile->awakening_attack,
-                'defense' => $profile->draft_defense ?? $profile->defense,
-                'draft_attack' => null,
-                'draft_awakening_attack' => null,
-                'draft_defense' => null,
-            ]);
+            $profile = $targetMembership->user->profile;
 
-            // Handle Media
-            $oldMedia = UserGearMedia::where('user_id', $targetMembership->user_id)
-                ->where('is_draft', false)
+            // Handle Media: Delete ONLY drafts. Keep the previously verified set.
+            $draftMedia = UserGearMedia::where('user_id', $targetMembership->user_id)
+                ->where('is_draft', true)
                 ->get();
 
-            foreach ($oldMedia as $media) {
+            foreach ($draftMedia as $media) {
                 $path = str_replace(Storage::url(''), '', $media->url);
                 Storage::disk('public')->delete($path);
                 $media->delete();
             }
-
-            UserGearMedia::where('user_id', $targetMembership->user_id)
-                ->where('is_draft', true)
-                ->update(['is_draft' => false]);
 
             $targetMembership->update([
                 'verification_status' => 'incomplete',

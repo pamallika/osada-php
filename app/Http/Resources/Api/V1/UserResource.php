@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'email' => $this->email,
             'name' => $this->name,
             'has_password' => !empty($this->password),
+            'avatar_url' => $this->avatar_url ? url($this->avatar_url) : null,
             'profile' => new UserProfileResource($this->whenLoaded('profile')),
             'linked_accounts' => LinkedAccountResource::collection($this->whenLoaded('linked_accounts')),
             'guild_memberships' => GuildMemberResource::collection($this->whenLoaded('guildMemberships')),
