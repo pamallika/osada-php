@@ -139,6 +139,15 @@ class GuildPolicy
             ->where('status', 'active')
             ->exists();
     }
+
+    public function managePosts(User $user, Guild $guild): bool
+    {
+        return $user->guildMemberships()
+            ->where('guild_id', $guild->id)
+            ->whereIn('role', ['admin', 'creator', 'leader'])
+            ->where('status', 'active')
+            ->exists();
+    }
 }
 
 

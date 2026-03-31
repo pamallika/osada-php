@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\TelegramWebhookController;
 use App\Http\Controllers\Api\V1\GuildIntegrationController;
 use App\Http\Controllers\Api\V1\GearController;
 use App\Http\Controllers\Api\V1\GuildVerificationController;
+use App\Http\Controllers\Api\V1\GuildPostController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -87,6 +88,10 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::get('/guilds/my/telegram-bind-token', [V1GuildController::class, 'telegramBindToken']);
             Route::post('/guilds/my/verification/submit', [GuildVerificationController::class, 'submit']);
 
+            // Knowledge Base (Guides)
+            Route::get('/guilds/my/posts', [GuildPostController::class, 'index']);
+            Route::get('/guilds/my/posts/{id}', [GuildPostController::class, 'show']);
+
             // User Profile
             Route::get('/users/{id}/profile', [UserController::class, 'show']);
 
@@ -127,6 +132,12 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
                 Route::post('/guilds/my/applications/{user_id}/reject', [GuildApplicationController::class, 'reject']);
                 Route::patch('/guilds/my/members/{user_id}/role', [GuildMemberController::class, 'updateRole']);
                 Route::delete('/guilds/my/members/{user_id}', [GuildMemberController::class, 'destroy']);
+
+                // Knowledge Base (Guides) management
+                Route::post('/guilds/my/posts', [GuildPostController::class, 'store']);
+                Route::put('/guilds/my/posts/{id}', [GuildPostController::class, 'update']);
+                Route::delete('/guilds/my/posts/{id}', [GuildPostController::class, 'destroy']);
+                Route::post('/guilds/my/posts/media', [GuildPostController::class, 'uploadMedia']);
             });
 
         });
