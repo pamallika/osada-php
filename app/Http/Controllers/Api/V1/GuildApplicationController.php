@@ -10,8 +10,13 @@ use Illuminate\Http\JsonResponse;
 
 use Illuminate\Http\Request;
 
+use App\Http\Resources\Api\V1\GuildMemberResource;
+use App\Traits\ApiResponser;
+
 class GuildApplicationController extends Controller
 {
+    use ApiResponser;
+
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
@@ -22,16 +27,10 @@ class GuildApplicationController extends Controller
 
         $applications = $guild->members()
             ->where('status', 'pending')
-            ->with('user.profile')
+            ->with(['user.profile', 'user.linked_accounts'])
             ->get();
 
-        return response()->json([
-            'data' => $applications->map(fn($m) => [
-                'user' => $m->user,
-                'profile' => $m->user->profile,
-                'applied_at' => $m->joined_at,
-            ])
-        ]);
+        return $this->successResponse(GuildMemberResource::collection($applications));
     }
 
     public function approve(Request $request, int $userId, ApproveApplicationAction $action): JsonResponse
@@ -48,7 +47,7 @@ class GuildApplicationController extends Controller
             'logo_url' => $guild->logo_url,
         ]));
 
-        return response()->json(['message' => 'Application approved']);
+        return $this->successResponse(null, 'Application approved');
     }
 
     public function reject(Request $request, int $userId, RejectApplicationAction $action): JsonResponse
@@ -65,6 +64,6 @@ class GuildApplicationController extends Controller
             'logo_url' => $guild->logo_url,
         ]));
 
-        return response()->json(['message' => 'Application rejected']);
+        return $this->successResponse(null, 'Application rejected');
     }
 }
