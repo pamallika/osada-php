@@ -16,6 +16,7 @@ class GuildMemberResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'user_id' => $this->user_id,
             'guild' => new GuildResource($this->whenLoaded('guild')),
             'user' => new UserResource($this->whenLoaded('user')),
             'role' => $this->role,
