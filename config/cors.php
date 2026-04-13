@@ -19,7 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL', 'https://arigami.space'), 'https://arigami.space'],
+    'allowed_origins' => array_filter(
+        array_map(
+            'trim',
+            explode(',', env('FRONTEND_URL', 'https://arigami.space'))
+        )
+    ),
 
     'allowed_origins_patterns' => [],
 
