@@ -22,7 +22,7 @@ class GetMemberDashboardAction
             ->where('user_id', $user->id)
             ->where('status', 'confirmed')
             ->whereHas('event', function ($query) {
-                $query->where('status', 'completed');
+                $query->whereIn('status', ['completed', 'archived']);
             })
             ->count();
 

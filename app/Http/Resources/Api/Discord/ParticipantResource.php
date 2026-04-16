@@ -22,6 +22,8 @@ class ParticipantResource extends JsonResource
                 ? $profile->family_name 
                 : (!empty($profile->global_name) ? $profile->global_name : 'User_' . $this->user_id),
 
+            'char_class' => $profile->char_class ?? null,
+            'verification_status' => $profile->verification_status ?? null,
             'status' => $this->status,
         ];
     }
