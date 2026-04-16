@@ -31,4 +31,9 @@ class Guild extends Model
     {
         return $this->hasMany(GuildInvite::class);
     }
+
+    public function posts(): HasMany
+    {
+        return $this->hasMany(GuildPost::class);
+    }
 }

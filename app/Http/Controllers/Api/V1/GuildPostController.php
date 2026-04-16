@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\Guilds\UploadPostMediaAction;
+use App\Actions\Guilds\ReorderPostsAction;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\GuildPostResource;
 use App\Models\GuildMember;
@@ -28,6 +29,7 @@ class GuildPostController extends Controller
 
         $posts = GuildPost::where('guild_id', $membership->guild_id)
             ->with(['author.profile'])
+            ->orderBy('position', 'asc')
             ->latest()
             ->get();
 
@@ -51,11 +53,14 @@ class GuildPostController extends Controller
             'content' => 'required|string',
         ]);
 
+        $maxPosition = GuildPost::where('guild_id', $membership->guild_id)->max('position') ?? 0;
+
         $post = GuildPost::create([
             'guild_id' => $membership->guild_id,
             'author_id' => $user->id,
             'title' => $validated['title'],
-            'content' => $validated['content'], // In a real production, use HTML Purifier here
+            'content' => $validated['content'],
+            'position' => $maxPosition + 1,
         ]);
 
         return $this->successResponse(new GuildPostResource($post->load('author.profile')), 'Post created', 201);
@@ -142,5 +147,33 @@ class GuildPostController extends Controller
         $url = $action->execute($request->file('image'), $membership->guild_id);
 
         return $this->successResponse(['url' => $url], 'Image uploaded');
+    }
+
+    /**
+     * Reorder posts for the guild.
+     */
+    public function reorder(Request $request, ReorderPostsAction $action): JsonResponse
+    {
+        $user = $request->user();
+        $membership = GuildMember::where('user_id', $user->id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        Gate::authorize('managePosts', $membership->guild);
+
+        $validated = $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:guild_posts,id',
+        ]);
+
+        $action->execute($membership->guild, $validated['ids']);
+
+        $posts = GuildPost::where('guild_id', $membership->guild_id)
+            ->with(['author.profile'])
+            ->orderBy('position', 'asc')
+            ->latest()
+            ->get();
+
+        return $this->successResponse(GuildPostResource::collection($posts), 'Posts reordered');
     }
 }

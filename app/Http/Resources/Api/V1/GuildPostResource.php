@@ -19,6 +19,7 @@ class GuildPostResource extends JsonResource
             'guild_id' => $this->guild_id,
             'author' => new UserResource($this->whenLoaded('author')),
             'title' => $this->title,
+            'position' => $this->position,
             'content' => $this->when($request->route()?->getActionMethod() !== 'index', $this->content),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

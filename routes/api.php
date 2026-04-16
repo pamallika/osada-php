@@ -115,6 +115,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
                 Route::post('/events/{id}/archive', [EventController::class, 'archive']);
                 Route::patch('/events/{id}/participants/{user_id}', [EventParticipantController::class, 'move']);
                 Route::post('/events/{id}/squads', [EventSquadController::class, 'store']);
+                Route::patch('/events/{id}/squads/reorder', [EventSquadController::class, 'reorder']);
                 Route::patch('/events/{eventId}/squads/{squadId}', [EventSquadController::class, 'update']);
                 Route::delete('/events/{eventId}/squads/{squadId}', [EventSquadController::class, 'destroy']);
 
@@ -135,6 +136,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
 
                 // Knowledge Base (Guides) management
                 Route::post('/guilds/my/posts', [GuildPostController::class, 'store']);
+                Route::patch('/guilds/my/posts/reorder', [GuildPostController::class, 'reorder']);
                 Route::put('/guilds/my/posts/{id}', [GuildPostController::class, 'update']);
                 Route::delete('/guilds/my/posts/{id}', [GuildPostController::class, 'destroy']);
                 Route::post('/guilds/my/posts/media', [GuildPostController::class, 'uploadMedia']);
@@ -162,6 +164,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             Route::patch('{id}/message', [EventController::class, 'updateMessageId']);
             Route::post('{id}/participants', [EventParticipantController::class, 'store']);
             Route::post('{id}/squads', [EventSquadController::class, 'store']);
+            Route::post('{id}/squads/reorder', [EventSquadController::class, 'reorder']);
             Route::post('{id}/apply-preset', [EventController::class, 'applyPreset']);
             Route::delete('{id}/squads/{squadId}', [EventSquadController::class, 'destroy']);
         });

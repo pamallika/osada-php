@@ -193,5 +193,35 @@ class EventSquadController extends Controller
             );
         });
     }
+
+    public function reorder(Request $request, $eventId)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|integer|exists:event_squads,id'
+        ]);
+
+        $event = Event::query()->findOrFail($eventId);
+        $this->authorize('update', $event);
+
+        if ($event->status === 'archived') {
+            return $this->errorResponse('Cannot reorder squads in an archived event', 403);
+        }
+
+        DB::transaction(function () use ($event, $request) {
+            foreach ($request->ids as $index => $id) {
+                // We only update non-system squads that belong to this event
+                $event->squads()
+                    ->where('id', $id)
+                    ->where('is_system', false)
+                    ->update(['position' => $index]);
+            }
+        });
+
+        return $this->successResponse(
+            new EventFullResource($event->load(['squads.participants.user.profile', 'participants.user.profile', 'guild'])),
+            'Squads reordered successfully'
+        );
+    }
 }
 

@@ -15,6 +15,7 @@ class GuildPost extends Model
         'author_id',
         'title',
         'content',
+        'position',
     ];
 
     public function guild(): BelongsTo
