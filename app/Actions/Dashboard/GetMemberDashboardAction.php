@@ -65,9 +65,6 @@ class GetMemberDashboardAction
             $openEvents = Event::query()
                 ->where('guild_id', $guild->id)
                 ->where('status', 'published')
-                ->whereDoesntHave('participants', function ($query) use ($user) {
-                    $query->where('user_id', $user->id);
-                })
                 ->orderBy('start_at', 'asc')
                 ->get();
         }

@@ -142,4 +142,25 @@ class GuildController extends Controller
 
         return $this->successResponse(new GuildResource($guild), 'Guild created successfully', 201);
     }
+
+    public function updatePrivacy(Request $request): JsonResponse
+    {
+        $request->validate([
+            'is_public' => 'required|boolean',
+        ]);
+
+        $membership = $request->user()->guildMemberships()
+            ->where('status', 'active')
+            ->where('role', 'creator')
+            ->first();
+
+        if (!$membership) {
+            return $this->errorResponse('Only the guild creator can update privacy settings.', 403);
+        }
+
+        $guild = $membership->guild;
+        $guild->update(['is_public' => $request->is_public]);
+
+        return $this->successResponse(new GuildResource($guild), 'Privacy settings updated successfully');
+    }
 }

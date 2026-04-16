@@ -6,7 +6,7 @@ Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
 Broadcast::channel('App.Models.User.{id}', function ($user, $id) {
     return (int) $user->id === (int) $id;
-});
+}, ['guards' => ['sanctum']]);
 
 Broadcast::channel('event.{eventId}', function ($user, $eventId) {
     $event = \App\Models\Event::find($eventId);
@@ -31,7 +31,7 @@ Broadcast::channel('guild.{id}', function ($user, $id) {
         ->where('status', 'active')
         ->first();
 
-    if (!$membership || !in_array($membership->role, ['officer', 'admin', 'creator'])) {
+    if (!$membership) {
         return false;
     }
 

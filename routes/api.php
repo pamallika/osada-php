@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\V1\GuildIntegrationController;
 use App\Http\Controllers\Api\V1\GearController;
 use App\Http\Controllers\Api\V1\GuildVerificationController;
 use App\Http\Controllers\Api\V1\GuildPostController;
+use App\Http\Controllers\Api\V1\PublicGuildController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -27,6 +28,13 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
 
     Route::post('/telegram/webhook', [TelegramWebhookController::class, 'handle']);
     Route::get('/status', GetSystemStatusAction::class);
+
+    Route::prefix('public/guilds')->group(function () {
+        Route::get('/', [PublicGuildController::class, 'index']);
+        Route::get('/{slug}', [PublicGuildController::class, 'show']);
+        Route::get('/{slug}/members', [PublicGuildController::class, 'members']);
+        Route::get('/{slug}/history', [PublicGuildController::class, 'history']);
+    });
 
     Route::prefix('guilds')->group(function () {
         Route::get('/invite-info/{slug}', [GuildController::class, 'inviteInfo']);
@@ -39,6 +47,7 @@ Route::prefix('v1')->middleware('bot_proxy')->group(function () {
             
             Route::middleware('role:creator')->group(function () {
                 Route::patch('/my/invite-slug', [GuildController::class, 'updateInviteSlug']);
+                Route::patch('/my/privacy', [GuildController::class, 'updatePrivacy']);
             });
         });
     });

@@ -12,7 +12,13 @@ class ApproveApplicationAction
         $member = $guild->members()->where('user_id', $userId)->where('status', 'pending')->firstOrFail();
 
         $member->update([
-            'status' => 'active'
+            'status' => 'active',
+            'joined_at' => now(),
+        ]);
+
+        $guild->membershipHistories()->create([
+            'user_id' => $userId,
+            'action' => 'join',
         ]);
     }
 }

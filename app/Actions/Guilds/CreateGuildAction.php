@@ -41,6 +41,11 @@ class CreateGuildAction
                 'joined_at' => now(),
             ]);
 
+            $guild->membershipHistories()->create([
+                'user_id' => $user->id,
+                'action' => 'join',
+            ]);
+
             return $guild;
         });
     }

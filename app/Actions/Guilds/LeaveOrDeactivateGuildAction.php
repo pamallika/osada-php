@@ -26,6 +26,11 @@ class LeaveOrDeactivateGuildAction
 
         $guild = $membership->guild;
 
+        $guild->membershipHistories()->create([
+            'user_id' => $user->id,
+            'action' => 'leave',
+        ]);
+
         if ($membership->role === 'creator') {
             // Creator leaves: deactivates the guild
             $guild->update(['status' => 'inactive']);

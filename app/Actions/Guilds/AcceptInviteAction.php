@@ -32,12 +32,21 @@ class AcceptInviteAction
             ]);
         }
 
-        $invite->guild->members()->create([
+        $member = $invite->guild->members()->withTrashed()->firstOrNew([
             'user_id' => $user->id,
+        ]);
+
+        $member->fill([
             'role' => GuildRole::MEMBER,
             'status' => 'pending',
             'joined_at' => now(),
         ]);
+
+        $member->save();
+
+        if ($member->trashed()) {
+            $member->restore();
+        }
 
         $invite->increment('uses');
     }

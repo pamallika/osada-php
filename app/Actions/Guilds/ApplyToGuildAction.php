@@ -43,10 +43,19 @@ class ApplyToGuildAction
             ]);
         }
 
-        $guild->members()->create([
+        $member = $guild->members()->withTrashed()->firstOrNew([
             'user_id' => $user->id,
+        ]);
+
+        $member->fill([
             'role' => 'member',
             'status' => 'pending',
         ]);
+
+        $member->save();
+
+        if ($member->trashed()) {
+            $member->restore();
+        }
     }
 }

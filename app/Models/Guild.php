@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Guild extends Model
 {
     use HasFactory;
-    protected $fillable = ['name', 'slug', 'owner_id', 'logo_url', 'invite_slug', 'status'];
+    protected $fillable = ['name', 'slug', 'owner_id', 'logo_url', 'invite_slug', 'status', 'description', 'is_public'];
 
     public function owner(): BelongsTo
     {
@@ -35,5 +35,10 @@ class Guild extends Model
     public function posts(): HasMany
     {
         return $this->hasMany(GuildPost::class);
+    }
+
+    public function membershipHistories(): HasMany
+    {
+        return $this->hasMany(GuildMembershipHistory::class);
     }
 }
